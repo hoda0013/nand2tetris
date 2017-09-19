@@ -1,0 +1,9 @@
+CHIP Nor {
+IN a, b;
+OUT out;
+
+PARTS:
+Not(in=a, out=not1out);
+Not(in=b, out=not2out);
+And(a=not1out, b=not2out, out=out);
+}
