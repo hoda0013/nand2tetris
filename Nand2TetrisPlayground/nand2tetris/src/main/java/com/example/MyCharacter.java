@@ -17,6 +17,10 @@ public class MyCharacter {
         mColumnIndex = columnIndex;
     }
 
+    public char getCargo() {
+        return mCargo;
+    }
+
     @Override
     public String toString() {
         String value = String.valueOf(mSourceIndex)
