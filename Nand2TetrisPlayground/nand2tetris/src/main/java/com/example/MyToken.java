@@ -1,8 +1,5 @@
 package com.example;
 
-import java.util.ArrayList;
-import java.util.List;
-
 /**
  * Created by DJH on 10/23/17.
  */
