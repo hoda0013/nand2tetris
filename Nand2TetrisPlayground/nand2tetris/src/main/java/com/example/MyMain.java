@@ -15,14 +15,12 @@ public class MyMain {
         CommandDecoder commandDecoder = new CommandDecoder();
         MyToken myToken;
         File file = new File("/Users/bigern/Projects/nand2tetris/projects/06/output.hack");
-
         try {
             bufferedWriter = new BufferedWriter(new FileWriter(file));
 
             while ((myToken = myTokenizer.getToken()) != null) {
                 System.out.println(myToken.toString());
                 String output = "";
-
                 switch (myToken.mToken) {
                     case COMMENT:
                         throw new RuntimeException("no comments allowed");
