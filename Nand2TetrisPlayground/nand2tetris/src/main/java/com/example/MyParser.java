@@ -23,7 +23,9 @@ public class MyParser {
     private static final int BUFFER_SIZE = 1000;
     String mFilename;
     private BufferedReader mReader;
+    private File mFile;
 
+    private CommandDecoder mCommandDecoder;
     private String mCurrentCommand;
 
     public enum CommandType {
@@ -32,16 +34,17 @@ public class MyParser {
         L_COMMAND
     }
 
-    public MyParser(String filename) {
+    public MyParser(String filename, CommandDecoder commandDecoder) {
         mFilename = filename;
+        mCommandDecoder = commandDecoder;
         init();
     }
 
     private void init() {
-        File file = new File(mFilename);
+        mFile = new File(mFilename);
         try {
-            FileReader fileReader = new FileReader(file);
-            mReader = new BufferedReader(fileReader, BUFFER_SIZE);
+            FileReader mFileReader = new FileReader(mFile);
+            mReader = new BufferedReader(mFileReader, BUFFER_SIZE);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -77,7 +80,17 @@ public class MyParser {
 
         //Now we have a line that has at least a command and possibly a comment inline
         //Find the first space and replace everything after with empty
-        mCurrentCommand = mCurrentCommand.substring(0, mCurrentCommand.indexOf(" "));
+        if (mCurrentCommand.contains(" ")) {
+            mCurrentCommand = mCurrentCommand.substring(0, mCurrentCommand.indexOf(" "));
+        }
+    }
+
+    public void rewind() {
+        try {
+            mReader = new BufferedReader(new FileReader(mFile));
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        }
     }
 
     public CommandType commandType() {
@@ -92,19 +105,49 @@ public class MyParser {
     }
 
     public String symbol() {
-        return null;
+        if (commandType() == CommandType.A_COMMAND) {
+            //this command starts with an @ and contains either a number or symbol, skip the @
+            // and return everything after it
+            return mCurrentCommand.substring(1);
+        } else if (commandType() == CommandType.L_COMMAND) {
+            return mCurrentCommand.substring(1, mCurrentCommand.length() - 1);
+        }
+        throw new RuntimeException("symbol() cannot be called on a C_COMMAND");
     }
 
     public String dest() {
-        return null;
+        if (commandType() == CommandType.C_COMMAND) {
+            return mCommandDecoder.getDest(mCurrentCommand);
+        }
+        throw new RuntimeException("dest() cannot be called on an L_COMMAND OR A_COMMAND");
     }
 
     public String comp() {
-        return null;
+        if (commandType() == CommandType.C_COMMAND) {
+            return mCommandDecoder.getComp(mCurrentCommand);
+        }
+        throw new RuntimeException("comp() cannot be called on an L_COMMAND OR A_COMMAND");
     }
 
     public String jump() {
-        return null;
+        if (commandType() == CommandType.C_COMMAND) {
+            return mCommandDecoder.getJump(mCurrentCommand);
+        }
+        throw new RuntimeException("jump() cannot be called on an L_COMMAND OR A_COMMAND");
+    }
+
+    public String binaryEncodedACommand() {
+        if (commandType() == CommandType.A_COMMAND) {
+            return mCommandDecoder.decodeACommand(mCurrentCommand);
+        }
+        throw new RuntimeException("command must be of type A_COMMAND");
+    }
+
+    public String binaryEncodedCCommand() {
+        if (commandType() == CommandType.C_COMMAND) {
+            return mCommandDecoder.decodeCCommand(mCurrentCommand);
+        }
+        throw new RuntimeException("command must be of type C_COMMAND");
     }
 
 }

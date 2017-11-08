@@ -16,6 +16,7 @@ public class MyTokenizer {
         mScanner = scanner;
     }
 
+
     public MyToken getToken() {
         MyCharacter currentCharacter;
         MyToken.Token currentToken = MyToken.Token.NONE;

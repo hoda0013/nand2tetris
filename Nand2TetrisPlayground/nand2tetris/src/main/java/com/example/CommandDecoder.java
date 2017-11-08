@@ -6,20 +6,36 @@ package com.example;
 
 public class CommandDecoder {
 
+    public String getDest(String cCommand) {
+        return cCommand.substring(0, cCommand.indexOf('='));
+    }
+
+    public String getComp(String cCommand) {
+        if (cCommand.contains(";")) {
+            return cCommand.substring(0, cCommand.indexOf(';'));
+        } else {
+            return cCommand.substring(cCommand.indexOf('=') + 1);
+        }
+    }
+
+    public String getJump(String cCommand) {
+        return cCommand.substring(cCommand.indexOf(';') + 1);
+    }
+
     public String decodeCCommand(String cCommand) {
         String decodedCCommand;
         if (cCommand.contains(";")) {
             //Is a command of the form comp;jump
-            String comp = cCommand.substring(0, cCommand.indexOf(';'));
-            String jump = cCommand.substring(cCommand.indexOf(';') + 1);
+            String comp = getComp(cCommand);
+            String jump = getJump(cCommand);
 
             CandA candA = compToCAndA(comp);
             String jumpNumber = jumpToJumpNumber(jump);
             decodedCCommand = "111" + candA.getA() + candA.getC() + "000" + jumpNumber;
         } else {
             //Is dest=comp
-            String dest = cCommand.substring(0, cCommand.indexOf('='));
-            String comp = cCommand.substring(cCommand.indexOf('=') + 1);
+            String dest = getDest(cCommand);
+            String comp = getComp(cCommand);
 
             CandA candA = compToCAndA(comp);
             String destNumber = destToDestNumber(dest);
@@ -29,85 +45,96 @@ public class CommandDecoder {
         return decodedCCommand;
     }
 
+    public boolean isACommandANumber(String aCommand) {
+        return aCommand.matches("/^\\d+$/");
+    }
+
     public String decodeACommand(String aCommand) {
-        aCommand = aCommand.trim();
-        aCommand = aCommand.replaceAll("@", "");
         Integer aNumber;
-        switch (aCommand) {
-            case "SP":
-                aNumber = 0;
-                break;
-            case "LCL":
-                aNumber = 1;
-                break;
-            case "ARG":
-                aNumber = 2;
-                break;
-            case "THIS":
-                aNumber = 3;
-                break;
-            case "THAT":
-                aNumber = 4;
-                break;
-            case "R0":
-                aNumber = 0;
-                break;
-            case "R1":
-                aNumber = 1;
-                break;
-            case "R2":
-                aNumber = 2;
-                break;
-            case "R3":
-                aNumber = 3;
-                break;
-            case "R4":
-                aNumber = 4;
-                break;
-            case "R5":
-                aNumber = 5;
-                break;
-            case "R6":
-                aNumber = 6;
-                break;
-            case "R7":
-                aNumber = 7;
-                break;
-            case "R8":
-                aNumber = 8;
-                break;
-            case "R9":
-                aNumber = 9;
-                break;
-            case "R10":
-                aNumber = 10;
-                break;
-            case "R11":
-                aNumber = 11;
-                break;
-            case "R12":
-                aNumber = 12;
-                break;
-            case "R13":
-                aNumber = 13;
-                break;
-            case "R14":
-                aNumber = 14;
-                break;
-            case "R15":
-                aNumber = 15;
-                break;
-            case "SCREEN":
-                aNumber = 16384;
-                break;
-            case "KBD":
-                aNumber = 24576;
-                break;
-            default:
-                aNumber = Integer.valueOf(aCommand);
+        if (aCommand.matches("-?\\d+(\\.\\d+)?")) {
+            //symbol is a number
+            aNumber = Integer.valueOf(aCommand);
+            return String.format("%016d", Long.valueOf(Integer.toBinaryString(aNumber)));
+        } else {
+            aCommand = aCommand.trim();
+            aCommand = aCommand.replaceAll("@", "");
+            switch (aCommand) {
+                case "SP":
+                    aNumber = 0;
+                    break;
+                case "LCL":
+                    aNumber = 1;
+                    break;
+                case "ARG":
+                    aNumber = 2;
+                    break;
+                case "THIS":
+                    aNumber = 3;
+                    break;
+                case "THAT":
+                    aNumber = 4;
+                    break;
+                case "R0":
+                    aNumber = 0;
+                    break;
+                case "R1":
+                    aNumber = 1;
+                    break;
+                case "R2":
+                    aNumber = 2;
+                    break;
+                case "R3":
+                    aNumber = 3;
+                    break;
+                case "R4":
+                    aNumber = 4;
+                    break;
+                case "R5":
+                    aNumber = 5;
+                    break;
+                case "R6":
+                    aNumber = 6;
+                    break;
+                case "R7":
+                    aNumber = 7;
+                    break;
+                case "R8":
+                    aNumber = 8;
+                    break;
+                case "R9":
+                    aNumber = 9;
+                    break;
+                case "R10":
+                    aNumber = 10;
+                    break;
+                case "R11":
+                    aNumber = 11;
+                    break;
+                case "R12":
+                    aNumber = 12;
+                    break;
+                case "R13":
+                    aNumber = 13;
+                    break;
+                case "R14":
+                    aNumber = 14;
+                    break;
+                case "R15":
+                    aNumber = 15;
+                    break;
+                case "SCREEN":
+                    aNumber = 16384;
+                    break;
+                case "KBD":
+                    aNumber = 24576;
+                    break;
+                default:
+                    //it's just a symbol, return it with the @ stripped
+                    return aCommand;
+            }
         }
 
-        return String.format("%016d", Integer.valueOf(Integer.toBinaryString(aNumber)));
+        return String.format("%016d", Long.valueOf(Integer.toBinaryString(aNumber)));
     }
 
     private CandA compToCAndA(String comp) {
@@ -228,7 +255,7 @@ public class CommandDecoder {
                 a = "1";
                 break;
             default:
-                throw new RuntimeException("Can't recognize comp command");
+                throw new RuntimeException("Can't recognize comp command: " + comp);
         }
 
         return new CandA(a, cNumber);
@@ -271,7 +298,7 @@ public class CommandDecoder {
                 break;
 
             default:
-                throw new RuntimeException("Jump command not recognized");
+                throw new RuntimeException("Jump command not recognized: " + jumpPart);
         }
 
         return jumpNumber;
@@ -314,7 +341,7 @@ public class CommandDecoder {
                 break;
 
             default:
-                throw new RuntimeException("dest not recognized");
+                throw new RuntimeException("dest not recognized: " + destPart);
         }
 
         return destNumber;
