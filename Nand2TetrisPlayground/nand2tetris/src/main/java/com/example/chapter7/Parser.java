@@ -1,14 +1,11 @@
 package com.example.chapter7;
 
-import com.sun.corba.se.impl.encoding.CodeSetConversion;
 
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
-
-import javax.management.relation.RelationNotFoundException;
 
 /**
  * Created by DJH on 11/21/17.
@@ -55,6 +52,7 @@ public class Parser {
 
     public Parser(String filename) {
         mFilename = filename;
+        init();
     }
 
     private void init() {
@@ -97,7 +95,9 @@ public class Parser {
         //Now we have a line that has at least a command and possibly a comment inline
         //Find the first space and replace everything after with empty
         if (mCurrentCommand.contains(" ")) {
-            mCurrentCommand = mCurrentCommand.substring(0, mCurrentCommand.indexOf(" "));
+            if (mCurrentCommand.contains(COMMENT)) {
+                mCurrentCommand = mCurrentCommand.substring(0, mCurrentCommand.indexOf("/"));
+            }
         }
     }
 
@@ -140,6 +140,7 @@ public class Parser {
 
         switch (commandType()) {
             case C_ARITHMETIC:
+
                 return mCurrentCommand;
             case C_PUSH:
             case C_POP:
