@@ -19,12 +19,12 @@ public class MyAssembler {
     private CommandDecoder mCommandDecoder;
     private static BufferedWriter bufferedWriter;
 
-    File file = new File("/Users/bigern/Projects/nand2tetris/projects/06/output.hack");
+    File file;
 
-    public MyAssembler(MyParser myParser, CommandDecoder commandDecoder) {
+    public MyAssembler(String outputFilename, MyParser myParser, CommandDecoder commandDecoder) {
+        file = new File(outputFilename);
         mMyParser = myParser;
         mCommandDecoder = commandDecoder;
-
     }
 
     public void assemble() {
@@ -68,19 +68,18 @@ public class MyAssembler {
                         case A_COMMAND:
                             String symbol = mMyParser.symbol();
                             symbol = mCommandDecoder.decodeACommand(symbol);
-                            if (symbol.matches("-?\\d+(\\.\\d+)?")) {
-                                //symbol is a number
-                                output = symbol;
-                            } else {
+
+                            if (!symbol.matches("-?\\d+(\\.\\d+)?")) {
+                                //symbol is not a number, it's something like @sum
                                 if (symbolMap.containsKey(symbol)) {
-                                    output = String.format("%016d", Long.valueOf(Long.toBinaryString(symbolMap.get(symbol))));
+                                    symbol = String.format("%016d", Long.valueOf(Long.toBinaryString(symbolMap.get(symbol))));
                                 } else {
                                     symbolMap.put(symbol, ramCounter);
-                                    output = String.format("%016d", Long.valueOf(Long.toBinaryString(ramCounter)));
+                                    symbol = String.format("%016d", Long.valueOf(Long.toBinaryString(ramCounter)));
                                     ramCounter++;
                                 }
                             }
-                            bufferedWriter.append(output);
+                            bufferedWriter.append(symbol);
                             bufferedWriter.append('\n');
                             break;
 
