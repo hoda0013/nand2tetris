@@ -8,8 +8,9 @@ public class MyMain {
 
     public static void main(String args[]) {
         CommandDecoder commandDecoder = new CommandDecoder();
-        MyParser myParser = new MyParser("/Users/bigern/Projects/nand2tetris/projects/06/add/Add.asm", commandDecoder);
-        MyAssembler myAssembler = new MyAssembler(myParser, commandDecoder);
+        MyParser myParser = new MyParser("/Users/bigern/Projects/nand2tetris/projects/06/pong/PongL.asm", commandDecoder);
+        String outputFile = "/Users/bigern/Projects/nand2tetris/projects/06/pong/MyPongL.hack";
+        MyAssembler myAssembler = new MyAssembler(outputFile, myParser, commandDecoder);
         myAssembler.assemble();
     }
 }
