@@ -359,6 +359,18 @@ public class CodeWriter {
                     break;
 
                 case "static":
+                    try {
+                        writeCommandAndNewline("@" + String.valueOf(16 + index)); //load number in A reg
+                        writeCommandAndNewline("D=M"); //D = value at index
+
+                        writeCommandAndNewline("@SP");
+                        writeCommandAndNewline("A=M");
+                        writeCommandAndNewline("M=D");
+
+                        incrementStackPointer();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
                     break;
 
@@ -467,6 +479,21 @@ public class CodeWriter {
                     break;
 
                 case "static":
+
+                    try {
+                        decrementStackPointerAndSaveInSpRegister();
+
+                        //Set D = value at M[SP]
+                        writeCommandAndNewline("@SP");
+                        writeCommandAndNewline("A=M");
+                        writeCommandAndNewline("D=M");
+
+                        writeCommandAndNewline("@" + String.valueOf(16 + index)); //load number in A reg
+                        writeCommandAndNewline("M=D"); //D = value at index
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
                     break;
 
