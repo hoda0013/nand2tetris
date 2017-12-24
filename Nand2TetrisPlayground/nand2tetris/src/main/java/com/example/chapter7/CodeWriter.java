@@ -400,7 +400,21 @@ public class CodeWriter {
                     break;
 
                 case "pointer":
+                    //push the value of pointer 0 or 1 onto the stack
+                    int address = 3 + index;
+                    try {
+                        //get the address of the pointer and set to D
+                        writeCommandAndNewline("@" + String.valueOf(address)); //load number in A reg
+                        writeCommandAndNewline("D=M"); //D = value at index
 
+                        writeCommandAndNewline("@SP");
+                        writeCommandAndNewline("A=M");
+                        writeCommandAndNewline("M=D");
+
+                        incrementStackPointer();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     break;
 
                 case "temp":
@@ -478,7 +492,20 @@ public class CodeWriter {
                     break;
 
                 case "pointer":
+                    try {
+                        decrementStackPointerAndSaveInSpRegister();
 
+                        //Set D = value at M[SP]
+                        writeCommandAndNewline("@SP");
+                        writeCommandAndNewline("A=M");
+                        writeCommandAndNewline("D=M");
+
+                        writeCommandAndNewline("@" + String.valueOf(3 + index)); //load number in A reg
+                        writeCommandAndNewline("M=D"); //D = value at index
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     break;
 
                 case "temp":
