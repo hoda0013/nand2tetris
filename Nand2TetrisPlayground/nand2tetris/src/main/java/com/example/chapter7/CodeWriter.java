@@ -300,6 +300,23 @@ public class CodeWriter {
         }
     }
 
+    private void decrementStackPointerAndSaveInSpRegister() throws IOException {
+        //get SP, decrement and store in R0
+        writeCommandAndNewline("@R0"); //A=0
+        writeCommandAndNewline("M=M-1"); //M = SP - 1
+    }
+
+    private void incrementStackPointer() throws IOException {
+        //Increment the SP and save it at R0
+        writeCommandAndNewline("@R0");
+        writeCommandAndNewline("M=M+1");
+    }
+
+    private void loadConstantIntoDRegister(int index) throws IOException {
+        writeCommandAndNewline("@" + String.valueOf(index)); //load number in A reg
+        writeCommandAndNewline("D=A"); //D = number
+    }
+
     private void writeCommandAndNewline(String command) throws IOException{
         mBufferedWriter.append(command);
         mBufferedWriter.append('\n');
@@ -334,9 +351,7 @@ public class CodeWriter {
                         //Set M[SP] equal to the constant held in the D register
                         writeCommandAndNewline("M=D"); //Set M[SP] = D = the constant we want to push on the stack
 
-                        //Increment the SP and save it at R0
-                        writeCommandAndNewline("@R0");
-                        writeCommandAndNewline("M=M+1");
+                        incrementStackPointer();
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -370,7 +385,35 @@ public class CodeWriter {
                     break;
 
                 case "local":
+                    try {
+                        decrementStackPointerAndSaveInSpRegister();
 
+                        //Set D register equal to value of index
+                        loadConstantIntoDRegister(index);
+
+                        //Set A equal to value of LCL
+                        writeCommandAndNewline("@R1");
+                        //Set D = M_LCL + INDEX, where to write the value pointed at by SP
+                        writeCommandAndNewline("D=M+D");
+                        //Save local index value in temp register
+                        writeCommandAndNewline("@R5");
+                        writeCommandAndNewline("M=D");
+                        //Get value of SP
+                        writeCommandAndNewline("@SP");
+                        //A = Value of SP
+                        writeCommandAndNewline("A=M"); //A = M_SP
+                        writeCommandAndNewline("D=M"); //D = M[SP]
+                        //write the value at M_SP to the local index
+                        writeCommandAndNewline("@R5");
+                        writeCommandAndNewline("A=M"); //A = value at R5
+                        writeCommandAndNewline("M=D");
+
+                        //Don't need to increment SP b/c it's a pop operation and you want to keep
+                        //the SP decremented
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     break;
 
                 case "static":
