@@ -143,7 +143,7 @@ public class CodeWriter {
                     writeCommandAndNewline("A=M"); //A=M[0] = SP value
                     writeCommandAndNewline("M=-1"); //x-y == 0, M[SP] = true
 
-                    writeCommandAndNewline("(EQ_DONE_" +     String.valueOf(mNumEqCalls) + ")");
+                    writeCommandAndNewline("(EQ_DONE_" + String.valueOf(mNumEqCalls) + ")");
 
                     //increment SP
                     writeCommandAndNewline("@R0");
@@ -176,11 +176,11 @@ public class CodeWriter {
                     writeCommandAndNewline("@R0"); //not equal
                     writeCommandAndNewline("A=M");
                     writeCommandAndNewline("M=0"); //false
-                    writeCommandAndNewline("@GT_DONE_"+ String.valueOf(mNumGtCalls));
+                    writeCommandAndNewline("@GT_DONE_" + String.valueOf(mNumGtCalls));
                     writeCommandAndNewline("0;JMP");
 
                     //x > y
-                    writeCommandAndNewline("(GT_"+ String.valueOf(mNumGtCalls) + ")");
+                    writeCommandAndNewline("(GT_" + String.valueOf(mNumGtCalls) + ")");
                     writeCommandAndNewline("@R0"); //not equal
                     writeCommandAndNewline("A=M");
                     writeCommandAndNewline("M=-1"); //x-y > 0, true
@@ -317,20 +317,45 @@ public class CodeWriter {
         writeCommandAndNewline("D=A"); //D = number
     }
 
-    private void writeCommandAndNewline(String command) throws IOException{
+    private void writeCommandAndNewline(String command) throws IOException {
         mBufferedWriter.append(command);
         mBufferedWriter.append('\n');
     }
 
+    private void push(int index, String baseSegment) throws IOException {
+        //Set D = index
+        writeCommandAndNewline("@" + String.valueOf(index)); //load number in A reg
+        writeCommandAndNewline("D=A"); //D = number
+        // Get base index, add index to it, store in base reg
+        writeCommandAndNewline(baseSegment);
+        writeCommandAndNewline("D=M+D");
+        writeCommandAndNewline("A=D");
+        writeCommandAndNewline("D=M");
+        //Get value of SP
+        writeCommandAndNewline("@SP");
+        writeCommandAndNewline("A=M");
+        writeCommandAndNewline("M=D");
+        //increment SP
+        incrementStackPointer();
+    }
+
     public void writePushPop(Parser.CommandType commandType, String segment, int index) {
         if (commandType == Parser.CommandType.C_PUSH) {
-            switch(segment) {
+            switch (segment) {
                 case "argument":
-
+                    try {
+                        push(index, "@R2");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     break;
 
                 case "local":
-
+                    try {
+                        push(index, "@R1");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     break;
 
                 case "static":
@@ -359,11 +384,19 @@ public class CodeWriter {
                     break;
 
                 case "this":
-
+                    try {
+                        push(index, "@R3");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     break;
 
                 case "that":
-
+                    try {
+                        push(index, "@R4");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     break;
 
                 case "pointer":
@@ -372,6 +405,28 @@ public class CodeWriter {
 
                 case "temp":
 
+                    try {
+                        //Push value from temp index onto stack
+
+                        //D = index value
+                        loadConstantIntoDRegister(index);
+                        //Get offset from base (R5)
+                        writeCommandAndNewline("@R5");
+                        //D = 5 + index
+                        writeCommandAndNewline("D=A+D");
+                        //A = index of temp pointer
+                        writeCommandAndNewline("A=D");
+                        //D = value of temp pointer
+                        writeCommandAndNewline("D=M");
+                        //Set M[SP] = D
+                        writeCommandAndNewline("@SP");
+                        writeCommandAndNewline("A=M");
+                        writeCommandAndNewline("M=D");
+
+                        incrementStackPointer();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     break;
 
                 default:
@@ -379,38 +434,19 @@ public class CodeWriter {
 
             }
         } else if (commandType == Parser.CommandType.C_POP) {
-            switch(segment) {
+            switch (segment) {
                 case "argument":
+                    try {
+                        pop(index, "@R2");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
                     break;
 
                 case "local":
                     try {
-                        decrementStackPointerAndSaveInSpRegister();
-
-                        //Set D register equal to value of index
-                        loadConstantIntoDRegister(index);
-
-                        //Set A equal to value of LCL
-                        writeCommandAndNewline("@R1");
-                        //Set D = M_LCL + INDEX, where to write the value pointed at by SP
-                        writeCommandAndNewline("D=M+D");
-                        //Save local index value in temp register
-                        writeCommandAndNewline("@R5");
-                        writeCommandAndNewline("M=D");
-                        //Get value of SP
-                        writeCommandAndNewline("@SP");
-                        //A = Value of SP
-                        writeCommandAndNewline("A=M"); //A = M_SP
-                        writeCommandAndNewline("D=M"); //D = M[SP]
-                        //write the value at M_SP to the local index
-                        writeCommandAndNewline("@R5");
-                        writeCommandAndNewline("A=M"); //A = value at R5
-                        writeCommandAndNewline("M=D");
-
-                        //Don't need to increment SP b/c it's a pop operation and you want to keep
-                        //the SP decremented
-
+                        pop(index, "@R1");
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -425,10 +461,19 @@ public class CodeWriter {
                     break;
 
                 case "this":
-
+                    try {
+                        pop(index, "@R3");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
                     break;
 
                 case "that":
+                    try {
+                        pop(index, "@R4");
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
                     break;
 
@@ -437,6 +482,20 @@ public class CodeWriter {
                     break;
 
                 case "temp":
+                    try {
+                        decrementStackPointerAndSaveInSpRegister();
+
+                        writeCommandAndNewline("@SP");
+                        writeCommandAndNewline("A=M");
+                        writeCommandAndNewline("D=M");
+
+                        int address = 5 + index;
+                        writeCommandAndNewline("@" + String.valueOf(address)); //load number in A reg
+                        writeCommandAndNewline("M=D");
+
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
 
                     break;
 
@@ -455,6 +514,31 @@ public class CodeWriter {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private void pop(int commandIndex, String baseIndex) throws IOException {
+        decrementStackPointerAndSaveInSpRegister();
+
+        loadConstantIntoDRegister(commandIndex);
+
+        //Set A equal to value of arg base
+        writeCommandAndNewline(baseIndex);
+        //Set base index register equal to the base value plus the offset
+        writeCommandAndNewline("M=M+D");
+
+        //Get value of SP
+        writeCommandAndNewline("@SP");
+        writeCommandAndNewline("A=M");
+        //Get value pointed at by SP
+        writeCommandAndNewline("D=M");
+        //Put value in register pointed to by base index + offset
+        writeCommandAndNewline(baseIndex);
+        writeCommandAndNewline("A=M");
+        writeCommandAndNewline("M=D");
+        //reset base index
+        loadConstantIntoDRegister(commandIndex);
+        writeCommandAndNewline(baseIndex);
+        writeCommandAndNewline("M=M-D");
     }
 
 }
