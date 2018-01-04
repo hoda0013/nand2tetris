@@ -13,6 +13,7 @@ public class MyVmTranslator {
     public MyVmTranslator(String inputFilename, String outputFilename) {
         mParser = new Parser(inputFilename);
         mCodeWriter = new CodeWriter(outputFilename);
+        mCodeWriter.setFileName(inputFilename);
     }
 
     public void translate() {

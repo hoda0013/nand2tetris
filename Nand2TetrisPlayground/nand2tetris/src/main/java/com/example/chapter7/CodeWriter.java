@@ -14,10 +14,13 @@ public class CodeWriter {
     private File mFile;
     private BufferedWriter mBufferedWriter;
 
+    private String mClassName;
     private String mInputFilename;
     private int mNumEqCalls = 0;
     private int mNumGtCalls = 0;
     private int mNumLtCalls = 0;
+
+    private int mNumLabelCalls = 0;
 
     public CodeWriter(String outputFilename) {
         mOutputFilename = outputFilename;
@@ -35,6 +38,7 @@ public class CodeWriter {
 
     public void setFileName(String filename) {
         mInputFilename = filename;
+        mClassName = mInputFilename.substring(mInputFilename.length() - 3);
     }
 
     public void writeArithmetic(String command) {
@@ -94,7 +98,6 @@ public class CodeWriter {
                     writeCommandAndNewline("M=M+1");
                     break;
                 case "neg":
-                    //TODO: update this method to be like add and sub
                     //2's complement way of making a number have the opposite sign
                     //To make a positive value negative, write out the positive number in binary, invert the digits, add one
 
@@ -153,7 +156,6 @@ public class CodeWriter {
 
 
                 case "gt":
-                    //TODO: fix so it works like the equals function, Increment SP at the end, Set SP value to R0 when you increment it
                     //get SP, decrement and store in R0
                     writeCommandAndNewline("@R0"); //A=0
                     writeCommandAndNewline("M=M-1"); //M = SP - 1
@@ -360,7 +362,7 @@ public class CodeWriter {
 
                 case "static":
                     try {
-                        writeCommandAndNewline("@" + String.valueOf(16 + index)); //load number in A reg
+                        writeCommandAndNewline("@" + mClassName + "." + String.valueOf(index)); //load number in A reg
                         writeCommandAndNewline("D=M"); //D = value at index
 
                         writeCommandAndNewline("@SP");
@@ -479,7 +481,6 @@ public class CodeWriter {
                     break;
 
                 case "static":
-
                     try {
                         decrementStackPointerAndSaveInSpRegister();
 
@@ -488,16 +489,13 @@ public class CodeWriter {
                         writeCommandAndNewline("A=M");
                         writeCommandAndNewline("D=M");
 
-                        writeCommandAndNewline("@" + String.valueOf(16 + index)); //load number in A reg
+                        writeCommandAndNewline("@" + mClassName + "." + String.valueOf(index)); // in the form Classname.index
+//                        writeCommandAndNewline("@" + String.valueOf(16 + index)); //load number in A reg
                         writeCommandAndNewline("M=D"); //D = value at index
 
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-
-                    break;
-
-                case "constant":
 
                     break;
 
@@ -595,4 +593,55 @@ public class CodeWriter {
         writeCommandAndNewline("M=M-D");
     }
 
+    public void writeInit() {
+        //TODO: setup bootstrapping code\
+        try {
+            //set R0 = 256 aka SP = 256
+            writeCommandAndNewline("@256");
+            writeCommandAndNewline("D=A");
+            writeCommandAndNewline("@0");
+            writeCommandAndNewline("M=D");
+
+            //reset D and A back to 0
+            writeCommandAndNewline("D=A");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void writeLabel(String label) {
+        try {
+            writeCommandAndNewline("(" + label + "_" + mNumLabelCalls++ + ")");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void writeGoto(String label) {
+        try {
+            //Set A equal to the label we want to jump to, then store value in D, then set M[0] = D meaning SP = (label)
+            writeCommandAndNewline("@" + label + mNumLabelCalls);
+            writeCommandAndNewline("D=A");
+            writeCommandAndNewline("@0");
+            writeCommandAndNewline("M=D");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void writeIf(String label) {
+        //TODO
+    }
+
+    public void writeCall(String functionName, int numArgs) {
+        //TODO
+    }
+
+    public void writeReturn() {
+        //TODO
+    }
+
+    public void writeFunction(String functionName, int numArgs) {
+        //TODO
+    }
 }
