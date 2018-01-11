@@ -7,7 +7,7 @@ package com.example.chapter7;
 public class MyMain {
 
     public static void main(String args[]) {
-        String baseDirectory = "/Users/bigern/Projects/nand2tetris/projects/08/ProgramFlow/BasicLoop/BasicLoop";
+        String baseDirectory = "/Users/bigern/Projects/nand2tetris/projects/08/ProgramFlow/FibonacciSeries/FibonacciSeries";
         String inputFilename = baseDirectory + ".vm";
         String outputFilename = baseDirectory + ".asm";
         MyVmTranslator vmTranslator = new MyVmTranslator(inputFilename, outputFilename);
