@@ -13,6 +13,7 @@ import java.io.IOException;
 
 public class Parser {
     private static final String COMMENT = "//";
+    private static final char TAB = '\t';
     private static final String POP_PREFIX = "pop";
     private static final String PUSH_PREFIX = "push";
     private static final String ADD_PREFIX = "add";
@@ -97,6 +98,9 @@ public class Parser {
         if (mCurrentCommand.contains(" ")) {
             if (mCurrentCommand.contains(COMMENT)) {
                 mCurrentCommand = mCurrentCommand.substring(0, mCurrentCommand.indexOf("/"));
+            }
+            if (mCurrentCommand.indexOf(TAB) != -1) {
+                mCurrentCommand = mCurrentCommand.substring(0, mCurrentCommand.indexOf(TAB));
             }
         }
     }

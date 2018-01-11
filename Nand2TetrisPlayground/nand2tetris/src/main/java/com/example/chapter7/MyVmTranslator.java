@@ -17,6 +17,8 @@ public class MyVmTranslator {
     }
 
     public void translate() {
+        mCodeWriter.writeInit();
+
         while (mParser.hasMoreCommands()) {
             try {
                 mParser.advance();
@@ -41,6 +43,21 @@ public class MyVmTranslator {
                     int arg2 = mParser.arg2();
                     mCodeWriter.writePushPop(currentCommand, arg1, arg2);
 
+                    break;
+
+                case C_LABEL:
+                    String label = mParser.arg1();
+                    mCodeWriter.writeLabel(label);
+                    break;
+
+                case C_IF:
+                    String ifLabel = mParser.arg1();
+                    mCodeWriter.writeIf(ifLabel);
+                    break;
+
+                case C_GOTO:
+                    String gotoLabel = mParser.arg1();
+                    mCodeWriter.writeGoto(gotoLabel);
                     break;
 
                 default:

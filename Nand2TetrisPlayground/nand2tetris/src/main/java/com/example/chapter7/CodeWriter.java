@@ -15,7 +15,7 @@ public class CodeWriter {
     private BufferedWriter mBufferedWriter;
 
     private String mClassName;
-    private String mInputFilename;
+    private String mInputFilePath;
     private int mNumEqCalls = 0;
     private int mNumGtCalls = 0;
     private int mNumLtCalls = 0;
@@ -37,8 +37,9 @@ public class CodeWriter {
     }
 
     public void setFileName(String filename) {
-        mInputFilename = filename;
-        mClassName = mInputFilename.substring(mInputFilename.length() - 3);
+        mInputFilePath = filename;
+        mClassName = mInputFilePath.substring(mInputFilePath.lastIndexOf('/'
+        ) + 1, mInputFilePath.length() - 3);
     }
 
     public void writeArithmetic(String command) {
@@ -490,7 +491,6 @@ public class CodeWriter {
                         writeCommandAndNewline("D=M");
 
                         writeCommandAndNewline("@" + mClassName + "." + String.valueOf(index)); // in the form Classname.index
-//                        writeCommandAndNewline("@" + String.valueOf(16 + index)); //load number in A reg
                         writeCommandAndNewline("M=D"); //D = value at index
 
                     } catch (IOException e) {
@@ -604,6 +604,8 @@ public class CodeWriter {
 
             //reset D and A back to 0
             writeCommandAndNewline("D=A");
+
+            //TODO: eventually the other register values need to be set here
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -611,7 +613,8 @@ public class CodeWriter {
 
     public void writeLabel(String label) {
         try {
-            writeCommandAndNewline("(" + label + "_" + mNumLabelCalls++ + ")");
+            //TODO: Not sure if these need an index added to them to guarantee uniqueness
+            writeCommandAndNewline("(" + label + "_" + mClassName + ")");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -619,18 +622,31 @@ public class CodeWriter {
 
     public void writeGoto(String label) {
         try {
-            //Set A equal to the label we want to jump to, then store value in D, then set M[0] = D meaning SP = (label)
-            writeCommandAndNewline("@" + label + mNumLabelCalls);
-            writeCommandAndNewline("D=A");
-            writeCommandAndNewline("@0");
-            writeCommandAndNewline("M=D");
+            //Set A equal to the label we want to jump to then jump there
+            writeCommandAndNewline("@" + label + "_" + mClassName);
+            writeCommandAndNewline("0;JMP");
+
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
     public void writeIf(String label) {
-        //TODO
+        try {
+            //Get top value of stack and see if it equals zero
+            decrementStackPointerAndSaveInSpRegister();
+
+            writeCommandAndNewline("@0");
+            writeCommandAndNewline("A=M"); //A = value of SP = M[0]
+            writeCommandAndNewline("D=M"); //D = M[SP] = value at top of stack
+
+            //If value pointed to by SP, represented by D, equals zero then jump to label
+            writeCommandAndNewline("@" + label + "_" + mClassName);
+            writeCommandAndNewline("D;JNE");
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void writeCall(String functionName, int numArgs) {
