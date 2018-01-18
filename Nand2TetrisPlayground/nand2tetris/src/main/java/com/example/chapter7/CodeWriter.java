@@ -284,7 +284,7 @@ public class CodeWriter {
                     writeCommandAndNewline("@R0"); //A=0
                     writeCommandAndNewline("M=M-1"); //M = SP - 1
 
-                    //get value of M[SP], store in D reg
+                    //get value of M[SP], store in D regSt
                     writeCommandAndNewline("A=M"); //A = SP
 
                     //bit-wise not of y
@@ -594,7 +594,7 @@ public class CodeWriter {
     }
 
     public void writeInit() {
-        //TODO: setup bootstrapping code\
+        //TODO: setup bootstrapping code
         try {
             //set R0 = 256 aka SP = 256
             writeCommandAndNewline("@256");
@@ -650,14 +650,147 @@ public class CodeWriter {
     }
 
     public void writeCall(String functionName, int numArgs) {
-        //TODO
+        try {
+            writeCommandAndNewline("(RETURN_" + functionName + ")");
+
+            writeCommandAndNewline("@R1");
+            writeCommandAndNewline("D=M");
+            writeCommandAndNewline("@SP");
+            writeCommandAndNewline("M=D");
+            incrementStackPointer();
+
+            writeCommandAndNewline("@R2");
+            writeCommandAndNewline("D=M");
+            writeCommandAndNewline("@SP");
+            writeCommandAndNewline("M=D");
+            incrementStackPointer();
+
+            writeCommandAndNewline("@R3");
+            writeCommandAndNewline("D=M");
+            writeCommandAndNewline("@SP");
+            writeCommandAndNewline("M=D");
+            incrementStackPointer();
+
+            writeCommandAndNewline("@R4");
+            writeCommandAndNewline("D=M");
+            writeCommandAndNewline("@SP");
+            writeCommandAndNewline("M=D");
+            incrementStackPointer();
+
+            writeCommandAndNewline("@SP");
+            writeCommandAndNewline("D=M"); //D = value of SP
+            writeCommandAndNewline("@" + String.valueOf(5+numArgs));
+            writeCommandAndNewline("D=D-A");
+            writeCommandAndNewline("@R2");
+            writeCommandAndNewline("M=D"); //ARG = SP - 5 - numArgs
+
+            writeCommandAndNewline("@SP");
+            writeCommandAndNewline("D=M");
+            writeCommandAndNewline("@R1");
+            writeCommandAndNewline("M=D"); //LCL = SP
+
+            writeCommandAndNewline("@FUNCTION_" + functionName);
+            writeCommandAndNewline("0;JMP"); //Jump to function label
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void writeReturn() {
-        //TODO
+        try {
+            //Save address of local to temp variable
+            writeCommandAndNewline("@R1");
+            writeCommandAndNewline("D=M");
+            writeCommandAndNewline("@R5");
+            writeCommandAndNewline("M=D");
+
+            //Get the value of the return address (located at FRAME - 5) and store in temp var
+            writeCommandAndNewline("@5");
+            writeCommandAndNewline("D=D-A");
+            writeCommandAndNewline("A=D");
+            writeCommandAndNewline("D=M");
+            writeCommandAndNewline("@R6");
+            writeCommandAndNewline("M=D");
+
+            //Set return value at correct address, Take value pointed at by SP and move it to address stored at @R6
+            writeCommandAndNewline("@SP");
+            writeCommandAndNewline("A=M-1"); //Set A to value of SP-1
+            writeCommandAndNewline("D=M");
+            writeCommandAndNewline("@R2");
+            writeCommandAndNewline("A=M");
+            writeCommandAndNewline("M=D"); //write value of D to value pointed at by R6, the return address
+
+            //Set SP = ARG + 1
+            writeCommandAndNewline("@R2");
+            writeCommandAndNewline("D=M+1");
+            writeCommandAndNewline("@SP");
+            writeCommandAndNewline("M=D"); //set value at SP equal to ARG + 1
+
+            //Set THAT = FRAME - 1
+            writeCommandAndNewline("@R5");
+            writeCommandAndNewline("D=M"); //Get value of FRAME
+            writeCommandAndNewline("@1");
+            writeCommandAndNewline("A=D-A"); //FRAME = FRAME - 1
+            writeCommandAndNewline("D=M"); //Get value at FRAME - 1
+            writeCommandAndNewline("@R4");
+            writeCommandAndNewline("M=D"); //THAT = FRAME - 1
+
+            //Set THIS = FRAME - 2
+            writeCommandAndNewline("@R5");
+            writeCommandAndNewline("D=M"); //Get value of FRAME
+            writeCommandAndNewline("@2");
+            writeCommandAndNewline("A=D-A"); //FRAME = FRAME - 2
+            writeCommandAndNewline("D=M"); //Get value at FRAME - 2
+            writeCommandAndNewline("@R3");
+            writeCommandAndNewline("M=D"); //THIS = FRAME - 2
+
+            //Set ARG = FRAME - 3
+            writeCommandAndNewline("@R5");
+            writeCommandAndNewline("D=M"); //Get value of FRAME
+            writeCommandAndNewline("@3");
+            writeCommandAndNewline("A=D-A"); //FRAME = FRAME - 3
+            writeCommandAndNewline("D=M"); //Get value at FRAME - 3
+            writeCommandAndNewline("@R2");
+            writeCommandAndNewline("M=D");
+
+            //Set LCL = FRAME - 4
+            writeCommandAndNewline("@R5");
+            writeCommandAndNewline("D=M"); //Get value of FRAME
+            writeCommandAndNewline("@4");
+            writeCommandAndNewline("A=D-A"); //FRAME = FRAME - 4
+            writeCommandAndNewline("D=M"); //Get value at FRAME - 4
+            writeCommandAndNewline("@R1");
+            writeCommandAndNewline("M=D");
+
+            //GOTO Return address
+            writeCommandAndNewline("@R6"); //get return address
+            writeCommandAndNewline("A=M");
+            writeCommandAndNewline("0;JMP");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public void writeFunction(String functionName, int numArgs) {
-        //TODO
+        try {
+            writeCommandAndNewline("(FUNCTION_" + functionName + ")");
+            for (int i = 0; i < numArgs; i++) {
+                //write constant 0 to the stack as many times as needed
+                writeCommandAndNewline("@0"); //load number in A reg
+                writeCommandAndNewline("D=A"); //D = number
+
+                //Load the value of the SP into register A
+                writeCommandAndNewline("@R0");
+                writeCommandAndNewline("A=M"); //Set A = M[0]
+
+                //Set M[SP] equal to the constant held in the D register
+                writeCommandAndNewline("M=D"); //Set M[SP] = D = the constant we want to push on the stack
+
+                incrementStackPointer();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

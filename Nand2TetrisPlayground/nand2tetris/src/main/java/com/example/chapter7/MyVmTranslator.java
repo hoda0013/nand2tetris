@@ -17,7 +17,8 @@ public class MyVmTranslator {
     }
 
     public void translate() {
-        mCodeWriter.writeInit();
+        //TODO: uncomment at some point or get the init code in the correct spot
+//        mCodeWriter.writeInit();
 
         while (mParser.hasMoreCommands()) {
             try {
@@ -28,7 +29,7 @@ public class MyVmTranslator {
             Parser.CommandType currentCommand = mParser.commandType();
             switch (currentCommand) {
                 case C_RETURN:
-
+                    mCodeWriter.writeReturn();
                     break;
 
                 case C_ARITHMETIC:
@@ -58,6 +59,16 @@ public class MyVmTranslator {
                 case C_GOTO:
                     String gotoLabel = mParser.arg1();
                     mCodeWriter.writeGoto(gotoLabel);
+                    break;
+
+                case C_FUNCTION:
+                    String functionLabel = mParser.arg1();
+                    int functionNumLocals = mParser.arg2();
+                    mCodeWriter.writeFunction(functionLabel, functionNumLocals);
+                    break;
+
+                case C_CALL:
+                    mCodeWriter.writeCall(mParser.arg1(), mParser.arg2());
                     break;
 
                 default:
