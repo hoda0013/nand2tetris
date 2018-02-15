@@ -10,6 +10,8 @@ import java.io.IOException;
  */
 
 public class CodeWriter {
+    private static int sRipCounter = 0;
+
     private String mOutputFilename;
     private File mFile;
     private BufferedWriter mBufferedWriter;
@@ -599,11 +601,13 @@ public class CodeWriter {
             //set R0 = 256 aka SP = 256
             writeCommandAndNewline("@256");
             writeCommandAndNewline("D=A");
-            writeCommandAndNewline("@0");
+            writeCommandAndNewline("@SP");
             writeCommandAndNewline("M=D");
 
             //reset D and A back to 0
             writeCommandAndNewline("D=A");
+
+            writeCall("Sys.init", 0);
 
             //TODO: eventually the other register values need to be set here
         } catch (IOException e) {
@@ -636,7 +640,7 @@ public class CodeWriter {
             //Get top value of stack and see if it equals zero
             decrementStackPointerAndSaveInSpRegister();
 
-            writeCommandAndNewline("@0");
+            writeCommandAndNewline("@SP");
             writeCommandAndNewline("A=M"); //A = value of SP = M[0]
             writeCommandAndNewline("D=M"); //D = M[SP] = value at top of stack
 
@@ -651,35 +655,55 @@ public class CodeWriter {
 
     public void writeCall(String functionName, int numArgs) {
         try {
-            writeCommandAndNewline("(RETURN_" + functionName + ")");
 
+            //FIXME: I think we need to actually write a return address to a memory location not just tag this with a return label
+
+            String ripValue = makeRIP(); //Creates a unique string that is used as a label in assembly. When the assembler runs the label will be given a value which will end up beign the return address value
+
+            //Write the value of the return address
+            writeCommandAndNewline("@" + ripValue);
+            writeCommandAndNewline("D=A");
+            writeCommandAndNewline("@SP");
+            writeCommandAndNewline("A=M");
+            writeCommandAndNewline("M=D");
+            incrementStackPointer();
+
+            //Save the current value of the R1 register (LCL)
             writeCommandAndNewline("@R1");
             writeCommandAndNewline("D=M");
             writeCommandAndNewline("@SP");
+            writeCommandAndNewline("A=M");
             writeCommandAndNewline("M=D");
             incrementStackPointer();
 
+            //Save the current value of the R2 register (ARG)
             writeCommandAndNewline("@R2");
             writeCommandAndNewline("D=M");
             writeCommandAndNewline("@SP");
+            writeCommandAndNewline("A=M");
             writeCommandAndNewline("M=D");
             incrementStackPointer();
 
+            //Save the current value of the R3 register (THIS)
             writeCommandAndNewline("@R3");
             writeCommandAndNewline("D=M");
             writeCommandAndNewline("@SP");
+            writeCommandAndNewline("A=M");
             writeCommandAndNewline("M=D");
             incrementStackPointer();
 
+            //Save the current value of the R4 register (THAT) to SP
             writeCommandAndNewline("@R4");
             writeCommandAndNewline("D=M");
             writeCommandAndNewline("@SP");
+            writeCommandAndNewline("A=M");
             writeCommandAndNewline("M=D");
             incrementStackPointer();
 
+            //Set ARG equal to current value of SP - 5 - Num args
             writeCommandAndNewline("@SP");
             writeCommandAndNewline("D=M"); //D = value of SP
-            writeCommandAndNewline("@" + String.valueOf(5+numArgs));
+            writeCommandAndNewline("@" + String.valueOf(5 + numArgs));
             writeCommandAndNewline("D=D-A");
             writeCommandAndNewline("@R2");
             writeCommandAndNewline("M=D"); //ARG = SP - 5 - numArgs
@@ -691,7 +715,7 @@ public class CodeWriter {
 
             writeCommandAndNewline("@FUNCTION_" + functionName);
             writeCommandAndNewline("0;JMP"); //Jump to function label
-
+            writeCommandAndNewline("(" + ripValue + ")");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -707,17 +731,17 @@ public class CodeWriter {
 
             //Get the value of the return address (located at FRAME - 5) and store in temp var
             writeCommandAndNewline("@5");
-            writeCommandAndNewline("D=D-A");
-            writeCommandAndNewline("A=D");
-            writeCommandAndNewline("D=M");
+            writeCommandAndNewline("A=D-A");  //A = FRAME - 5, location of where return address is
+//            writeCommandAndNewline("A=M");    //A = Value at return address (because it's an address itself)
+            writeCommandAndNewline("D=M");    //D = value at the address where return address points to
             writeCommandAndNewline("@R6");
             writeCommandAndNewline("M=D");
 
             //Set return value at correct address, Take value pointed at by SP and move it to address stored at @R6
             writeCommandAndNewline("@SP");
-            writeCommandAndNewline("A=M-1"); //Set A to value of SP-1
-            writeCommandAndNewline("D=M");
-            writeCommandAndNewline("@R2");
+            writeCommandAndNewline("A=M-1");
+            writeCommandAndNewline("D=M"); //Get value pointed to by SP - 1
+            writeCommandAndNewline("@R2"); //TESTINg used to be @R2
             writeCommandAndNewline("A=M");
             writeCommandAndNewline("M=D"); //write value of D to value pointed at by R6, the return address
 
@@ -792,5 +816,9 @@ public class CodeWriter {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    private String makeRIP() {
+        return "RIP$" + String.valueOf(sRipCounter++);
     }
 }

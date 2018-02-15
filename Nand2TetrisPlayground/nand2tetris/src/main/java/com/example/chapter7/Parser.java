@@ -51,7 +51,10 @@ public class Parser {
         C_CALL
     }
 
-    public Parser(String filename) {
+    public Parser() {
+    }
+
+    public void setFilename(String filename) {
         mFilename = filename;
         init();
     }
@@ -98,6 +101,7 @@ public class Parser {
         if (mCurrentCommand.contains(" ")) {
             if (mCurrentCommand.contains(COMMENT)) {
                 mCurrentCommand = mCurrentCommand.substring(0, mCurrentCommand.indexOf("/"));
+                mCurrentCommand = mCurrentCommand.trim();
             }
             if (mCurrentCommand.indexOf(TAB) != -1) {
                 mCurrentCommand = mCurrentCommand.substring(0, mCurrentCommand.indexOf(TAB));
