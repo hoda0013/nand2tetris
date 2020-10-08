@@ -8,6 +8,7 @@ public class MyMain {
 
     public static void main(String args[]) {
         System.out.println("Running...");
+        Trial.Companion.printMyStuff();
         String baseDirectory = "/Users/bigern/Projects/nand2tetris/projects/08/FunctionCalls/FibonacciElement/";
 //        String inputFilename = baseDirectory + ".vm";
         String outputFilename = baseDirectory + "FibonacciElement.asm";
