@@ -5,9 +5,13 @@ import java.util.ArrayList
 fun main(args: Array<String>) {
 
     val tokens: MutableList<String> = ArrayList<String>().apply {
-        add("Class")
+        add("class")
         add("Bar")
         add("{")
+        add("field")
+        add("int")
+        add("1someword")
+        add(";")
         add("method")
         add("Fraction")
         add("foo")

@@ -1,3 +1,0 @@
-<class>
-<keyword> class </keyword>
-<identifier> Bar </identifier> </class>
