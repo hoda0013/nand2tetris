@@ -7,6 +7,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.example.chapter10.Parser;
+
 public class MyMain {
 
     public static void main(String args[]) {
@@ -21,6 +23,22 @@ public class MyMain {
 //        reverseWordsInSentence("I am a sentence that goes this way.");
 //        isPalindrome("madamimadams");
 //        System.out.println(recursiveFibonacci(8));
+        List<String> tokens = new ArrayList<String>();
+        tokens.add("Class");
+        tokens.add("Bar");
+        tokens.add("{");
+        tokens.add("method");
+        tokens.add("Fraction");
+        tokens.add("foo");
+        tokens.add("(");
+        tokens.add("int");
+        tokens.add("y");
+        tokens.add(")");
+
+
+        Parser p = new Parser();
+        p.setTokens(tokens);
+        p.parse();
     }
 
     public static void quickSort(int [] array) {
