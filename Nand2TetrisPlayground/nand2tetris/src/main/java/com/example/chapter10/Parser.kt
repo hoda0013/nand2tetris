@@ -60,11 +60,11 @@ class Parser {
             Symbol.parse('{', currentToken, bufferedWriter, numTabs)
             getNextToken()
 
-            // TODO Parse 0 to N classVarDec
-
             while(ClassVarDec.isTokenAClassifier(currentToken)) {
                 parseClassVarDec()
             }
+
+            //TODO: Parse 0 or more subroutineDec
 
             // Print class closing tag
             unIndent()
