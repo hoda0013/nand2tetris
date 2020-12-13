@@ -1,0 +1,25 @@
+<class>
+	<keyword> class </keyword>
+	<identifier> Bar </identifier>
+	<symbol> { </symbol>
+	<classVarDec> 
+		<keyword> field </keyword>
+		<identifier> int </identifier>
+		<identifier> var1 </identifier>
+		<symbol> ; </symbol>
+	</classVarDec>
+	<classVarDec> 
+		<keyword> field </keyword>
+		<identifier> boolean </identifier>
+		<identifier> var2 </identifier>
+		<symbol> ; </symbol>
+	</classVarDec>
+	<classVarDec> 
+		<keyword> static </keyword>
+		<identifier> FakeClassName </identifier>
+		<identifier> var3 </identifier>
+		<symbol> , </symbol>
+		<identifier> var4 </identifier>
+		<symbol> ; </symbol>
+	</classVarDec>
+</class>

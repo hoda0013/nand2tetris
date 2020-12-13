@@ -103,6 +103,7 @@ class Parser {
 
         unIndent()
         bufferedWriter.append(Tag.makeCloseTag(Category.CLASS_VAR_DEC.value, numTabs))
+        getNextToken()
     }
 
     private fun parseVarName() {
