@@ -8,9 +8,8 @@ import java.util.regex.Pattern
 
 
 class Parser constructor(){
-
     private var tokens: List<String> = emptyList()
-    private var currentToken: String? = null
+    private lateinit var currentToken: String
     private var tokenPointer: Int = 0
     private var outputFile: File = File("parser_output.txt")
     private var bufferedWriter = BufferedWriter(FileWriter(outputFile))
@@ -43,6 +42,18 @@ class Parser constructor(){
 
             parseClassName()
 
+            getNextToken()
+
+            if (currentToken == "{") {
+                parseSymbol()
+            } else {
+                throwException()
+            }
+
+            getNextToken()
+
+            // TODO Parse 0 to N classVarDec
+
             // Print class closing tag
             bufferedWriter.append("</class>\n")
         } else {
@@ -52,6 +63,14 @@ class Parser constructor(){
 
     private fun parseClassName() {
         parseIdentifier()
+    }
+
+    private fun parseSymbol() {
+        if (Symbol.isValid(currentToken)) {
+            Symbol.printTag(bufferedWriter, currentToken)
+        } else {
+            throwException()
+        }
     }
 
     private fun parseIdentifier() {
@@ -67,9 +86,20 @@ class Parser constructor(){
         throw Exception("Error parsing token: $currentToken at tokenIndex: $tokenPointer")
     }
 
+    object Symbol {
+        val regex = "[\\{\\}\\(\\)\\[\\]\\.\\,\\;\\+\\-\\*\\/\\&\\|<>=_]"
+        fun isValid(token: String): Boolean {
+            return Pattern.compile(regex).matcher(token).matches()
+        }
+
+        fun printTag(bufferedWriter: BufferedWriter, token: String) {
+            bufferedWriter.append("<symbol> $token </symbol>\n")
+        }
+    }
+
     object Identifier {
         val regex = "[a-zA-Z_][a-zA-Z0-9_]*"
-        fun isValid(token: String?): Boolean {
+        fun isValid(token: String): Boolean {
             return Pattern.compile(regex).matcher(token).matches()
 //            token?.matches(Pattern.compile(regex))
 //            return token?.matches(Regex.fromLiteral("[a-zA-Z_][a-zA-Z0-9_]*")) ?: false
