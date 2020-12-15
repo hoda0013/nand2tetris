@@ -4,13 +4,13 @@
 	<symbol> { </symbol>
 	<classVarDec> 
 		<keyword> field </keyword>
-		<identifier> int </identifier>
+		<keyword> int </keyword>
 		<identifier> var1 </identifier>
 		<symbol> ; </symbol>
 	</classVarDec>
 	<classVarDec> 
 		<keyword> field </keyword>
-		<identifier> boolean </identifier>
+		<keyword> boolean </keyword>
 		<identifier> var2 </identifier>
 		<symbol> ; </symbol>
 	</classVarDec>
@@ -22,4 +22,17 @@
 		<identifier> var4 </identifier>
 		<symbol> ; </symbol>
 	</classVarDec>
-</class>
+	<subroutineDec> 
+		<keyword> method </keyword>
+		<identifier> Fraction </identifier>
+		<identifier> foo </identifier>
+		<symbol> ( </symbol>
+		<parameterList> 
+			<keyword> int </keyword>
+			<identifier> y </identifier>
+		</parameterList>
+		<symbol> ) </symbol>
+		<subroutineBody> 
+			<symbol> { </symbol>
+			<subroutineBody> 
+			</subroutineBody>
