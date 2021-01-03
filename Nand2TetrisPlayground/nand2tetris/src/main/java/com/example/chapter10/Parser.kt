@@ -20,6 +20,10 @@ class Parser {
         return currentToken
     }
 
+    private fun peekNextToken(): String? {
+        return tokens[tokenPointer + 1]
+    }
+
     fun setTokens(tokens: List<String>) {
         this.tokens = tokens
         currentToken = tokens[tokenPointer]
@@ -76,11 +80,15 @@ class Parser {
         print("</$tagName>\n")
     }
 
-    private fun parseIdentifier() {
+    private fun isIdentifier(): Boolean {
         val regex = "[a-zA-Z_][a-zA-Z0-9_]*"
         val pattern = Pattern.compile(regex)
 
-        if (pattern.matcher(currentToken).matches()) {
+        return pattern.matcher(currentToken).matches()
+    }
+
+    private fun parseIdentifier() {
+        if (isIdentifier()) {
             printTerminalTag(Category.IDENTIFIER.value.toLowerCase(), currentToken)
         } else {
             throw Exception("token: $currentToken not a valid Identifier")
@@ -202,8 +210,8 @@ class Parser {
                 || currentToken == Keyword.WHILE.value
                 || currentToken == Keyword.DO.value
                 || currentToken == Keyword.RETURN.value) {
-            when {
-                currentToken == Keyword.LET.value -> {
+            when (currentToken) {
+                Keyword.LET.value -> {
                     printNonTerminalOpenTag(Category.LET_STATEMENT.value)
 
                     parseKeyword()
@@ -217,10 +225,14 @@ class Parser {
                         parseSymbol('[')
                         getNextToken()
 
+                        parseExpression()
+                        getNextToken()
                         // parse expression
                         parseSymbol(']')
+                        getNextToken()
                     }
 
+                    //TODO:
                     // Parse "=" symbol
 
                     // Parse expression
@@ -229,24 +241,24 @@ class Parser {
 
                     printNonTerminalCloseTag(Category.LET_STATEMENT.value)
                 }
-                currentToken == Keyword.IF.value -> {
+                Keyword.IF.value -> {
                     printNonTerminalOpenTag(Category.IF_STATEMENT.value)
 
                     parseKeyword()
 
                     printNonTerminalCloseTag(Category.IF_STATEMENT.value)
                 }
-                currentToken == Keyword.WHILE.value -> {
+                Keyword.WHILE.value -> {
                     printNonTerminalOpenTag(Category.WHILE_STATEMENT.value)
                     parseKeyword()
                     printNonTerminalCloseTag(Category.WHILE_STATEMENT.value)
                 }
-                currentToken == Keyword.DO.value -> {
+                Keyword.DO.value -> {
                     printNonTerminalOpenTag(Category.DO_STATEMENT.value)
                     parseKeyword()
                     printNonTerminalCloseTag(Category.DO_STATEMENT.value)
                 }
-                currentToken == Keyword.RETURN.value -> {
+                Keyword.RETURN.value -> {
                     printNonTerminalOpenTag(Category.RETURN_STATEMENT.value)
                     parseKeyword()
                     printNonTerminalCloseTag(Category.RETURN_STATEMENT.value)
@@ -381,12 +393,113 @@ class Parser {
         parseIdentifier()
     }
 
+    private fun parseExpression() {
+        parseTerm()
+
+        // TODO: parse 0 or more (op term)
+    }
+
+    private fun isIntegerConstant(): Boolean {
+        return try {
+            val number = currentToken.toInt()
+            number in 0..32767
+        } catch (e: NumberFormatException) {
+            false
+        }
+    }
+
+    private fun isKeywordConstant(): Boolean {
+        return currentToken == Keyword.TRUE.value
+                || currentToken == Keyword.FALSE.value
+                || currentToken == Keyword.NULL.value
+                || currentToken == Keyword.THIS.value
+    }
+
+    private fun isStringConstant(): Boolean {
+        return currentToken.startsWith("\"")
+                && currentToken.endsWith("\"")
+                && !currentToken.trimStart().trimEnd().contains("\"")
+                && !currentToken.trimStart().trimEnd().contains("\n")
+    }
+
+    private fun isVarName(): Boolean {
+        return isIdentifier()
+    }
+
+    private fun isSubroutineCall(): Boolean {
+        // subroutines start with a subroutine name which is just an identifier
+        return isIdentifier()
+    }
+
+    private fun isUnaryOp(): Boolean {
+        return currentToken == "~"
+                || currentToken == "-"
+    }
+
+    private fun parseUnaryOp() {
+        if (currentToken == "-") {
+            parseSymbol('-')
+        } else if (currentToken == "~") {
+            parseSymbol('~')
+        } else {
+            throwException()
+        }
+    }
+
+    private fun parseTerm() {
+        when {
+            isIntegerConstant() -> {
+                printTerminalTag(Category.INTEGER_CONSTANT.value, currentToken)
+            }
+            isStringConstant() -> {
+                printTerminalTag(Category.STRING_CONSTANT.value, currentToken)
+            }
+            isKeywordConstant() -> {
+                parseKeyword()
+            }
+            isVarName() -> {
+                parseIdentifier()
+                val nextToken = peekNextToken()
+
+                if (nextToken == "[") {
+                    getNextToken()
+                    parseSymbol('[')
+                    getNextToken()
+                    parseExpression()
+                    getNextToken()
+                    parseSymbol(']')
+                }
+            }
+            isSubroutineCall() -> {
+                // TODO
+            }
+            currentToken == "(" -> {
+                parseSymbol('(')
+                getNextToken()
+
+                parseExpression()
+                getNextToken()
+
+                parseSymbol(')')
+            }
+            isUnaryOp() -> {
+                parseUnaryOp()
+                getNextToken()
+
+                parseTerm()
+            }
+            else -> {
+                throwException()
+            }
+        }
+    }
+
     private fun throwException() {
         throw Exception("Error parsing token: $currentToken at tokenIndex: $tokenPointer")
     }
 
     object Symbol {
-        private const val regex = "[\\{\\}\\(\\)\\[\\]\\.\\,\\;\\+\\-\\*\\/\\&\\|<>=_]"
+        private const val regex = "[\\{\\}\\(\\)\\[\\]\\.\\,\\;\\+\\-\\*\\/\\&\\|<>=~]"
     }
 
     object IntegerConstant {

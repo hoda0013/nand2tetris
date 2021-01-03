@@ -2,19 +2,19 @@
 	<keyword> class </keyword>
 	<identifier> Bar </identifier>
 	<symbol> { </symbol>
-	<classVarDec> 
+	<classVarDec>
 		<keyword> field </keyword>
 		<keyword> int </keyword>
 		<identifier> var1 </identifier>
 		<symbol> ; </symbol>
 	</classVarDec>
-	<classVarDec> 
+	<classVarDec>
 		<keyword> field </keyword>
 		<keyword> boolean </keyword>
 		<identifier> var2 </identifier>
 		<symbol> ; </symbol>
 	</classVarDec>
-	<classVarDec> 
+	<classVarDec>
 		<keyword> static </keyword>
 		<identifier> FakeClassName </identifier>
 		<identifier> var3 </identifier>
@@ -22,17 +22,27 @@
 		<identifier> var4 </identifier>
 		<symbol> ; </symbol>
 	</classVarDec>
-	<subroutineDec> 
+	<subroutineDec>
 		<keyword> method </keyword>
 		<identifier> Fraction </identifier>
 		<identifier> foo </identifier>
 		<symbol> ( </symbol>
-		<parameterList> 
+		<parameterList>
 			<keyword> int </keyword>
 			<identifier> y </identifier>
 		</parameterList>
 		<symbol> ) </symbol>
-		<subroutineBody> 
+		<subroutineBody>
 			<symbol> { </symbol>
-			<subroutineBody> 
-			</subroutineBody>
+			<varDec>
+				<keyword> var </keyword>
+				<keyword> int </keyword>
+				<identifier> temp </identifier>
+				<symbol> ; </symbol>
+			</varDec>
+			<statements>
+				<letStatement>
+					<keyword> let </keyword>
+					<identifier> temp </identifier>
+				</letStatement>
+			</statements>
