@@ -226,7 +226,7 @@ class Parser {
                         getNextToken()
 
                         parseExpression()
-                        getNextToken()
+//                        getNextToken()
                         // parse expression
                         parseSymbol(']')
                         getNextToken()
@@ -395,8 +395,15 @@ class Parser {
 
     private fun parseExpression() {
         parseTerm()
+        getNextToken()
 
-        // TODO: parse 0 or more (op term)
+        while(isOp()) {
+            parseOp()
+            getNextToken()
+
+            parseTerm()
+            getNextToken()
+        }
     }
 
     private fun isIntegerConstant(): Boolean {
@@ -436,13 +443,50 @@ class Parser {
                 || currentToken == "-"
     }
 
+    private fun isOp(): Boolean {
+        return currentToken == "+"
+                || currentToken == "-"
+                || currentToken == "*"
+                || currentToken == "/"
+                || currentToken == "&"
+                || currentToken == "|"
+                || currentToken == "<"
+                || currentToken == ">"
+                || currentToken == "="
+    }
+
+    private fun parseOp() {
+        printTerminalTag(Category.OP.value, currentToken)
+    }
+
     private fun parseUnaryOp() {
-        if (currentToken == "-") {
-            parseSymbol('-')
-        } else if (currentToken == "~") {
-            parseSymbol('~')
+        when (currentToken) {
+            "-" -> {
+                parseSymbol('-')
+            }
+            "~" -> {
+                parseSymbol('~')
+            }
+            else -> {
+                throwException()
+            }
+        }
+    }
+
+    private fun parseExpressionList() {
+        // Expression lists have 0 or 1 initial expressions
+        // If 1 initial expression exists then there may be 0 to N comma separated expressions
+        if (currentToken == ")") {
+            return
         } else {
-            throwException()
+            parseExpression()
+//            getNextToken()
+
+            while(currentToken == ",") {
+                parseSymbol(',')
+                parseExpression()
+//                getNextToken()
+            }
         }
     }
 
@@ -466,19 +510,58 @@ class Parser {
                     parseSymbol('[')
                     getNextToken()
                     parseExpression()
-                    getNextToken()
+//                    getNextToken()
                     parseSymbol(']')
                 }
             }
             isSubroutineCall() -> {
-                // TODO
+                //
+                if (isIdentifier()) {
+                    // subroutineCall will either be a subroutineName followed by a "(" or a className or varName followed by a "."
+                    parseIdentifier() // takes care of the subRoutineName, className or varName
+                    getNextToken()
+                    when (currentToken) {
+                        "(" -> {
+                            parseSymbol('(')
+                            getNextToken()
+
+                            parseExpressionList()
+                            // Don't advance token here
+
+                            parseSymbol(')')
+                            getNextToken()
+                        }
+                        "." -> {
+                            parseSymbol('.')
+                            getNextToken()
+
+                            parseSubroutineName()
+                            getNextToken()
+
+                            parseSymbol('(')
+                            getNextToken()
+
+                            parseExpressionList()
+                            // Don't advance token here
+
+                            parseSymbol(')')
+                            getNextToken()
+                        }
+                        else -> {
+                            throwException()
+                        }
+                    }
+
+                } else {
+                    throwException()
+                }
             }
             currentToken == "(" -> {
                 parseSymbol('(')
                 getNextToken()
 
                 parseExpression()
-                getNextToken()
+//                getNextToken()
 
                 parseSymbol(')')
             }
