@@ -11,7 +11,7 @@
 /.idea/jarRepositories.xml
 /.idea/gradle.xml
 /.idea/codeStyles/Project.xml
-/.idea
+.idea/
 .DS_Store
 /captures
 .externalNativeBuild

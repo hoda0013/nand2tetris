@@ -1,0 +1,48 @@
+<class>
+	<keyword> class </keyword>
+	<identifier> Bar </identifier>
+	<symbol> { </symbol>
+	<classVarDec>
+		<keyword> field </keyword>
+		<keyword> int </keyword>
+		<identifier> var1 </identifier>
+		<symbol> ; </symbol>
+	</classVarDec>
+	<classVarDec>
+		<keyword> field </keyword>
+		<keyword> boolean </keyword>
+		<identifier> var2 </identifier>
+		<symbol> ; </symbol>
+	</classVarDec>
+	<classVarDec>
+		<keyword> static </keyword>
+		<identifier> FakeClassName </identifier>
+		<identifier> var3 </identifier>
+		<symbol> , </symbol>
+		<identifier> var4 </identifier>
+		<symbol> ; </symbol>
+	</classVarDec>
+	<subroutineDec>
+		<keyword> method </keyword>
+		<identifier> Fraction </identifier>
+		<identifier> foo </identifier>
+		<symbol> ( </symbol>
+		<parameterList>
+			<keyword> int </keyword>
+			<identifier> y </identifier>
+		</parameterList>
+		<symbol> ) </symbol>
+		<subroutineBody>
+			<symbol> { </symbol>
+			<varDec>
+				<keyword> var </keyword>
+				<keyword> int </keyword>
+				<identifier> temp </identifier>
+				<symbol> ; </symbol>
+			</varDec>
+			<statements>
+				<letStatement>
+					<keyword> let </keyword>
+					<identifier> temp </identifier>
+				</letStatement>
+			</statements>
