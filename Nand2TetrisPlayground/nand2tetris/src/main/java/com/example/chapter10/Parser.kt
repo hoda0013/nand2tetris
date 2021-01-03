@@ -3,7 +3,6 @@ package com.example.chapter10
 import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
-import java.security.Key
 import java.util.regex.Pattern
 
 
@@ -47,65 +46,108 @@ class Parser {
         numTabs--
     }
 
+    private fun parseKeyword() {
+        if (Keyword.values().map { it.value }.contains(currentToken)) {
+            printTerminalTag(Category.KEYWORD.name.toLowerCase(), currentToken)
+        } else {
+            throw Exception("cannot parse $currentToken as Keyword")
+        }
+    }
+
+    private fun print(value: String) {
+        var output = ""
+        for(i in 0 until numTabs) {
+            output = output.plus("\t")
+        }
+        bufferedWriter.append(output.plus(value))
+    }
+
+    private fun printTerminalTag(tagName: String, value: String) {
+        print("<$tagName> $value </$tagName>\n")
+    }
+
+    private fun printNonTerminalOpenTag(tagName: String) {
+        print("<$tagName>\n")
+        indent()
+    }
+
+    private fun printNonTerminalCloseTag(tagName: String) {
+        unIndent()
+        print("</$tagName>\n")
+    }
+
+    private fun parseIdentifier() {
+        val regex = "[a-zA-Z_][a-zA-Z0-9_]*"
+        val pattern = Pattern.compile(regex)
+
+        if (pattern.matcher(currentToken).matches()) {
+            printTerminalTag(Category.IDENTIFIER.value.toLowerCase(), currentToken)
+        } else {
+            throw Exception("token: $currentToken not a valid Identifier")
+        }
+    }
+
+    private fun parseSymbol(expectedSymbol: Char) {
+        if (expectedSymbol.toString() == currentToken) {
+            printTerminalTag(Category.SYMBOL.value.toLowerCase(), currentToken)
+        } else {
+            throw Exception("expected: $expectedSymbol got: $currentToken")
+        }
+    }
+
     // class is a non-terminal
     private fun parseClass() {
         if (currentToken.equals(Keyword.CLASS.value, true)) {
             // Print open class tag <class>
-            bufferedWriter.append("<class>\n")
+            printNonTerminalOpenTag(Keyword.CLASS.value)
 
-            indent()
-
-            KeywordObject.parse(currentToken, bufferedWriter, numTabs)
-
+            parseKeyword()
             getNextToken()
 
             parseClassName()
             getNextToken()
 
-            Symbol.parse('{', currentToken, bufferedWriter, numTabs)
+            parseSymbol('{')
             getNextToken()
 
-            while(ClassVarDec.isTokenAClassifier(currentToken)) {
+            while(currentToken == Keyword.STATIC.value
+                    || currentToken == Keyword.FIELD.value) {
                 parseClassVarDec()
+                getNextToken()
             }
 
-            while(SubroutinDec.isTokenAClassifier(currentToken)) {
+            while(currentToken == Keyword.CONSTRUCTOR.value
+                    || currentToken == Keyword.METHOD.value
+                    || currentToken == Keyword.FUNCTION.value) {
                 parseSubroutineDec()
             }
 
             // Print class closing tag
-            unIndent()
-            bufferedWriter.append("</class>\n")
+            printNonTerminalCloseTag(Category.CLASS.value)
         } else {
             throwException()
         }
     }
 
     private fun parseSubroutineDec() {
-        bufferedWriter.append("${Tag.makeOpenTag(Category.SUBROUTINE_DEC.value, numTabs)}\n")
-        indent()
+        printNonTerminalOpenTag(Category.SUBROUTINE_DEC.value)
 
         // first token must be a "constructor" "function" or "method"
         if (currentToken == Keyword.CONSTRUCTOR.value
                 || currentToken == Keyword.FUNCTION.value
                 || currentToken == Keyword.METHOD.value) {
-            KeywordObject.parse(currentToken, bufferedWriter, numTabs)
+            parseKeyword()
             getNextToken()
         } else {
             throwException()
         }
 
-        // next token is void or a valid type
-        when {
-            currentToken == Keyword.VOID.value -> {
-                KeywordObject.parse(currentToken, bufferedWriter, numTabs)
-            }
-            Type.isValid(currentToken) -> {
-                Type.parse(currentToken, bufferedWriter, numTabs)
-            }
-            else -> {
-                throwException()
-            }
+        // next token is void or a valid type or an exception
+
+        if (currentToken == Keyword.VOID.value) {
+            parseKeyword()
+        } else {
+            parseType()
         }
         getNextToken()
 
@@ -114,78 +156,100 @@ class Parser {
         getNextToken()
 
         // parse parameter list '(' with param list inside and ending in ')'
-        parseParameterList()
+        parseSymbol('(')
         getNextToken()
+
+        if (currentToken == ")") {
+            parseSymbol(')')
+            getNextToken()
+        } else {
+            parseParameterList()
+            // We don't need to call getNextToken here because param list does that by default
+            parseSymbol(')')
+            getNextToken()
+        }
+
 
         // next is the subroutine body
         parseSubroutineBody()
         getNextToken()
 
-        unIndent()
-        bufferedWriter.append(Tag.makeCloseTag(currentToken, numTabs))
+        printNonTerminalCloseTag(Category.SUBROUTINE_DEC.value)
     }
 
     private fun parseStatements() {
-        bufferedWriter.append("${Tag.makeOpenTag(Category.SUBROUTINE_BODY.value, numTabs)}\n")
-        indent()
+        printNonTerminalOpenTag(Category.STATEMENTS.value)
 
-        while(Statement.isTokenAClassifier(currentToken)) {
+        while(currentToken == Keyword.LET.value
+                || currentToken == Keyword.IF.value
+                || currentToken == Keyword.WHILE.value
+                || currentToken == Keyword.DO.value
+                || currentToken == Keyword.RETURN.value) {
+
             parseStatement()
             getNextToken()
         }
 
-        unIndent()
-        bufferedWriter.append(Tag.makeCloseTag(Category.SUBROUTINE_BODY.value, numTabs))
+        printNonTerminalCloseTag(Category.STATEMENTS.value)
     }
 
     private fun parseStatement() {
+        //TODO: Flesh all of these out
+
             // classify statement and parse
-        if (Statement.isTokenAClassifier(currentToken)) {
-            val tag = when {
+        if (currentToken == Keyword.LET.value
+                || currentToken == Keyword.IF.value
+                || currentToken == Keyword.WHILE.value
+                || currentToken == Keyword.DO.value
+                || currentToken == Keyword.RETURN.value) {
+            when {
                 currentToken == Keyword.LET.value -> {
-                    bufferedWriter.append("${Tag.makeOpenTag(Category.LET_STATEMENT.value, numTabs)}\n")
-                    indent()
+                    printNonTerminalOpenTag(Category.LET_STATEMENT.value)
 
-                    KeywordObject.parse(currentToken, bufferedWriter, numTabs)
+                    parseKeyword()
+                    getNextToken()
 
-                    unIndent()
-                    bufferedWriter.append(Tag.makeCloseTag(Category.LET_STATEMENT.value, numTabs))
+                    parseVarName()
+                    getNextToken()
+
+                    if (currentToken == "[") {
+                        // If next token is a "[" then you parse an expression
+                        parseSymbol('[')
+                        getNextToken()
+
+                        // parse expression
+                        parseSymbol(']')
+                    }
+
+                    // Parse "=" symbol
+
+                    // Parse expression
+
+                    // Parse ";" symbol
+
+                    printNonTerminalCloseTag(Category.LET_STATEMENT.value)
                 }
                 currentToken == Keyword.IF.value -> {
-                    bufferedWriter.append("${Tag.makeOpenTag(Category.IF_STATEMENT.value, numTabs)}\n")
-                    indent()
+                    printNonTerminalOpenTag(Category.IF_STATEMENT.value)
 
-                    KeywordObject.parse(currentToken, bufferedWriter, numTabs)
+                    parseKeyword()
 
-                    unIndent()
-                    bufferedWriter.append(Tag.makeCloseTag(Category.IF_STATEMENT.value, numTabs))
+                    printNonTerminalCloseTag(Category.IF_STATEMENT.value)
                 }
                 currentToken == Keyword.WHILE.value -> {
-                    bufferedWriter.append("${Tag.makeOpenTag(Category.WHILE_STATEMENT.value, numTabs)}\n")
-                    indent()
-
-                    KeywordObject.parse(currentToken, bufferedWriter, numTabs)
-
-                    unIndent()
-                    bufferedWriter.append(Tag.makeCloseTag(Category.WHILE_STATEMENT.value, numTabs))
+                    printNonTerminalOpenTag(Category.WHILE_STATEMENT.value)
+                    parseKeyword()
+                    printNonTerminalCloseTag(Category.WHILE_STATEMENT.value)
                 }
                 currentToken == Keyword.DO.value -> {
-                    bufferedWriter.append("${Tag.makeOpenTag(Category.DO_STATEMENT.value, numTabs)}\n")
-                    indent()
-
-                    KeywordObject.parse(currentToken, bufferedWriter, numTabs)
-
-                    unIndent()
-                    bufferedWriter.append(Tag.makeCloseTag(Category.DO_STATEMENT.value, numTabs))
+                    printNonTerminalOpenTag(Category.DO_STATEMENT.value)
+                    parseKeyword()
+                    printNonTerminalCloseTag(Category.DO_STATEMENT.value)
                 }
                 currentToken == Keyword.RETURN.value -> {
-                    bufferedWriter.append("${Tag.makeOpenTag(Category.RETURN_STATEMENT.value, numTabs)}\n")
-                    indent()
-
-                    KeywordObject.parse(currentToken, bufferedWriter, numTabs)
-
-                    unIndent()
-                    bufferedWriter.append(Tag.makeCloseTag(Category.RETURN_STATEMENT.value, numTabs))
+                    printNonTerminalOpenTag(Category.RETURN_STATEMENT.value)
+                    parseKeyword()
+                    printNonTerminalCloseTag(Category.RETURN_STATEMENT.value)
                 }
                 else -> {
                     throwException()
@@ -196,16 +260,44 @@ class Parser {
         }
     }
 
-    private fun parseSubroutineBody() {
-        bufferedWriter.append("${Tag.makeOpenTag(Category.SUBROUTINE_BODY.value, numTabs)}\n")
-        indent()
+    private fun parseVarDec() {
+        printNonTerminalOpenTag(Category.VAR_DEC.value)
 
-        Symbol.parse('{', currentToken, bufferedWriter, numTabs)
+        if (currentToken == Keyword.VAR.value) {
+            parseKeyword()
+            getNextToken()
+
+            parseType()
+            getNextToken()
+
+            parseVarName()
+            getNextToken()
+
+            while(currentToken == ",") {
+                parseSymbol(',')
+                getNextToken()
+                parseVarName()
+                getNextToken()
+            }
+
+            parseSymbol(';')
+
+        } else {
+            throwException()
+        }
+
+        printNonTerminalCloseTag(Category.VAR_DEC.value)
+    }
+
+    private fun parseSubroutineBody() {
+        printNonTerminalOpenTag(Category.SUBROUTINE_BODY.value)
+
+        parseSymbol('{')
         getNextToken()
 
         // zero or more var decs
-        while(ClassVarDec.isTokenAClassifier(currentToken)) {
-            parseClassVarDec()
+        while(currentToken == Keyword.VAR.value) {
+            parseVarDec()
             getNextToken()
         }
 
@@ -213,139 +305,80 @@ class Parser {
         parseStatements()
         getNextToken()
 
-        Symbol.parse('}', currentToken, bufferedWriter, numTabs)
-        unIndent()
+        parseSymbol('}')
 
-        bufferedWriter.append(Tag.makeCloseTag(Category.SUBROUTINE_BODY.value, numTabs))
+        printNonTerminalCloseTag(Category.SUBROUTINE_BODY.value)
     }
 
     private fun parseSubroutineName() {
-        Identifier.parse(currentToken, bufferedWriter, numTabs)
+        parseIdentifier()
     }
 
-    private fun parseParameterList  () {
-        Symbol.parse('(', currentToken, bufferedWriter, numTabs)
-        getNextToken()
+    private fun parseParameterList() {
+            printNonTerminalOpenTag(Category.PARAMETER_LIST.value)
 
-        if (currentToken == ")") {
-            // There was no parameter, do nothing
-            Symbol.parse(')', currentToken, bufferedWriter, numTabs)
-        } else {
-            // Since it was not a closing paren, it must be one or more types and param names
-            bufferedWriter.append("${Tag.makeOpenTag(Category.PARAMETER_LIST.value, numTabs)}\n")
-            indent()
-
-            Type.parse(currentToken, bufferedWriter, numTabs)
+            parseType()
             getNextToken()
 
             parseVarName()
             getNextToken()
 
             while(currentToken == ",") {
-                Symbol.parse(',', currentToken, bufferedWriter, numTabs)
+                parseSymbol(',')
                 getNextToken()
                 parseVarName()
                 getNextToken()
             }
 
-            unIndent()
-            bufferedWriter.append(Tag.makeCloseTag(Category.PARAMETER_LIST.value, numTabs))
-
-            Symbol.parse(')', currentToken, bufferedWriter, numTabs)
-        }
+            printNonTerminalCloseTag(Category.PARAMETER_LIST.value)
     }
 
     private fun parseClassVarDec() {
-        bufferedWriter.append("${Tag.makeOpenTag(Category.CLASS_VAR_DEC.value, numTabs)}\n")
+        printNonTerminalOpenTag(Category.CLASS_VAR_DEC.value)
 
-        indent()
         if (currentToken == Keyword.STATIC.value || currentToken == Keyword.FIELD.value) {
-            KeywordObject.parse(currentToken, bufferedWriter, numTabs)
+            parseKeyword()
             getNextToken()
         } else {
             throwException()
         }
 
-        Type.parse(currentToken, bufferedWriter, numTabs)
+        // parse the type, which is required and is either int, char, bool or something created by the user or an exception
+        parseType()
+
         getNextToken()
 
         parseVarName()
         getNextToken()
 
-        while(currentToken.equals(",")) {
-            Symbol.parse(',', currentToken, bufferedWriter, numTabs)
+        while(currentToken == ",") {
+            parseSymbol(',')
             getNextToken()
             parseVarName()
             getNextToken()
         }
 
-        Symbol.parse(';', currentToken, bufferedWriter, numTabs)
-        // parse semicolon symbol
+        parseSymbol(';')
 
-        unIndent()
-        bufferedWriter.append(Tag.makeCloseTag(Category.CLASS_VAR_DEC.value, numTabs))
-        getNextToken()
+        printNonTerminalCloseTag(Category.CLASS_VAR_DEC.value)
+    }
+
+    private fun parseType() {
+        if (currentToken == Keyword.INT.value
+                || currentToken == Keyword.CHAR.value
+                || currentToken == Keyword.BOOLEAN.value) {
+            parseKeyword()
+        } else {
+            parseIdentifier()
+        }
     }
 
     private fun parseVarName() {
-        Identifier.parse(currentToken, bufferedWriter, numTabs)
-    }
-
-    object Statement {
-        fun isTokenAClassifier(token: String) : Boolean {
-            return token == Keyword.LET.value
-                    || token == Keyword.IF.value
-                    || token == Keyword.WHILE.value
-                    || token == Keyword.DO.value
-                    || token == Keyword.RETURN.value
-        }
-    }
-
-    object Type {
-        fun isValid(token: String): Boolean {
-            return Keyword.INT.value.equals(token)
-                    || Keyword.CHAR.value.equals(token)
-                    || Keyword.BOOLEAN.value.equals(token)
-                    || Identifier.isValid(token)
-        }
-
-        private fun isKeyword(token: String): Boolean {
-            return Keyword.INT.value.equals(token)
-                    || Keyword.CHAR.value.equals(token)
-                    || Keyword.BOOLEAN.value.equals(token)
-        }
-
-        fun parse(token: String, bufferedWriter: BufferedWriter, numTabs: Int) {
-            if (isValid(token)) {
-                if (isKeyword(token)) {
-                    KeywordObject.parse(token, bufferedWriter, numTabs)
-                } else {
-                    Identifier.parse(token, bufferedWriter, numTabs)
-                }
-            } else {
-                throw Exception("token: $token is not a Type")
-            }
-        }
-    }
-
-    object SubroutinDec {
-        fun isTokenAClassifier(token: String): Boolean {
-            return token == Keyword.CONSTRUCTOR.value
-                    || token == Keyword.METHOD.value
-                    || token == Keyword.FUNCTION.value
-        }
-    }
-
-    object ClassVarDec {
-
-        fun isTokenAClassifier(token: String): Boolean {
-            return token == Keyword.STATIC.value
-                    || token == Keyword.FIELD.value
-        }
+        parseIdentifier()
     }
 
     private fun parseClassName() {
-        Identifier.parse(currentToken, bufferedWriter, numTabs)
+        parseIdentifier()
     }
 
     private fun throwException() {
@@ -354,72 +387,16 @@ class Parser {
 
     object Symbol {
         private const val regex = "[\\{\\}\\(\\)\\[\\]\\.\\,\\;\\+\\-\\*\\/\\&\\|<>=_]"
-        private val pattern: Pattern
-
-        init {
-            pattern = Pattern.compile(regex)
-        }
-
-        fun isValid(token: String): Boolean {
-            return pattern.matcher(token).matches()
-        }
-
-        fun parse(expectedSymbol: Char, tokenSymbol: String, bufferedWriter: BufferedWriter, numTabs: Int) {
-            if (isValid(tokenSymbol) && expectedSymbol.toString() == tokenSymbol) {
-                printTag(tokenSymbol, bufferedWriter, numTabs)
-            } else {
-                throw Exception("expected: $expectedSymbol got: $tokenSymbol")
-            }
-        }
-
-        private fun printTag(token: String, bufferedWriter: BufferedWriter, numTabs: Int) {
-            bufferedWriter.append(Tag.makeOneliner(Category.SYMBOL.name.toLowerCase(), token, numTabs))
-        }
     }
 
-    object Identifier {
-        private const val regex = "[a-zA-Z_][a-zA-Z0-9_]*"
-        private val pattern: Pattern
-
-        init {
-            pattern = Pattern.compile(regex)
-        }
-
+    object IntegerConstant {
         fun isValid(token: String): Boolean {
-            return Pattern.compile(regex).matcher(token).matches()
-        }
-
-        fun parse(token: String, bufferedWriter: BufferedWriter, numTabs: Int) {
-            if (isValid(token)) {
-                printTag(token, bufferedWriter, numTabs)
-            } else {
-                throw Exception("token: $token not a valid Identifier")
+            return try {
+                val number = token.toInt()
+                number in 0..32767
+            } catch (e: NumberFormatException) {
+                false
             }
-        }
-
-        private fun printTag(token: String, bufferedWriter: BufferedWriter, numTabs: Int) {
-            bufferedWriter.append(Tag.makeOneliner(Category.IDENTIFIER.name.toLowerCase(), token, numTabs))
-        }
-    }
-
-    object KeywordObject {
-
-        fun isValid(token: String): Boolean {
-            return Keyword.values()
-                    .map { it.value}
-                    .contains(token)
-        }
-
-        fun parse(token: String, bufferedWriter: BufferedWriter, numTabs: Int) {
-            if (isValid(token)) {
-                printTag(token, bufferedWriter, numTabs)
-            } else {
-                throw Exception()
-            }
-        }
-
-        private fun printTag(token: String, bufferedWriter: BufferedWriter, numTabs: Int) {
-            bufferedWriter.append(Tag.makeOneliner(Category.KEYWORD.name.toLowerCase(), token, numTabs))
         }
     }
 
@@ -478,42 +455,5 @@ class Parser {
         ELSE("else"),
         WHILE("while"),
         RETURN("return");
-
-        fun isTokenAKeyword(token: String): Boolean = values()
-                .map { it.value.toLowerCase() }
-                .contains(token.toLowerCase())
-
-        fun parse(token: String, bufferedWriter: BufferedWriter) {
-            if (isTokenAKeyword(token)) {
-                bufferedWriter.append("")
-            } else {
-                throw Exception()
-            }
-        }
-    }
-
-    object Tag {
-        fun makeOneliner(tagName: String, value: String, numTabs: Int): String {
-            return makeTabs(numTabs).plus("<$tagName> $value ${makeCloseTag(tagName, 0)}")
-        }
-
-        fun makeOpenTag(tagName: String, numTabs: Int) : String {
-            var output = ""
-            for(i in 0 until numTabs) {
-                output = output.plus("\t")
-            }
-            return makeTabs(numTabs).plus("<$tagName> ")
-        }
-        fun makeCloseTag(value: String, numTabs: Int) : String {
-            return makeTabs(numTabs).plus("</$value>\n")
-        }
-
-        private fun makeTabs(numTabs: Int): String {
-            var output = ""
-            for(i in 0 until numTabs) {
-                output = output.plus("\t")
-            }
-            return output
-        }
     }
 }
