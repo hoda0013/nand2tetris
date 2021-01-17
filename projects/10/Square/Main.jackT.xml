@@ -80,12 +80,12 @@
 <keyword> let </keyword>
 <identifier> a </identifier>
 <symbol> [ </symbol>
-<intgerConstant> 1 </intgerConstant>
+<integerConstant> 1 </integerConstant>
 <symbol> ] </symbol>
 <symbol> = </symbol>
 <identifier> a </identifier>
 <symbol> [ </symbol>
-<intgerConstant> 2 </intgerConstant>
+<integerConstant> 2 </integerConstant>
 <symbol> ] </symbol>
 <symbol> ; </symbol>
 <symbol> } </symbol>
@@ -108,7 +108,7 @@
 <symbol> / </symbol>
 <symbol> ( </symbol>
 <symbol> - </symbol>
-<intgerConstant> 2 </intgerConstant>
+<integerConstant> 2 </integerConstant>
 <symbol> ) </symbol>
 <symbol> ; </symbol>
 <keyword> let </keyword>

@@ -150,7 +150,18 @@ class Tokenizer {
 
     data class Token(val type: TokenType, val value: String) {
         fun printTag(bufferedWriter: BufferedWriter) {
-            bufferedWriter.append("<${type.value}> $value </${type.value}>\n")
+            val printValue = if(type == TokenType.SYMBOL) {
+                when(value) {
+                    "<" -> {"&lt;"}
+                    ">" -> {"&gt;"}
+                    "\"" -> {"&quote;"}
+                    "&" -> {"&amp;"}
+                    else -> { value }
+                }
+            } else {
+                value
+            }
+            bufferedWriter.append("<${type.value}> $printValue </${type.value}>\n")
         }
     }
 
