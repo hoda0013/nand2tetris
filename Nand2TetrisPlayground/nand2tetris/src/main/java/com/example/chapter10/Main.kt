@@ -5,7 +5,7 @@ import java.io.File
 fun main(args: Array<String>) {
     val tokenizer = Tokenizer()
 
-    val fileOrDirectory = "/Users/bigern/Projects/nand2tetris/projects/10/Square/"
+    val fileOrDirectory = "/Users/bigern/Projects/nand2tetris/projects/10/ArrayTest/"
     val file = File(fileOrDirectory)
 
     if (file.exists()) {

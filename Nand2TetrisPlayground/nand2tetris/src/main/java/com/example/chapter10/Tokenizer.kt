@@ -18,7 +18,9 @@ class Tokenizer {
 
     fun initialize(fileName: String) {
         inputFile = File(fileName)
-        outputFile = File(fileName.plus("T.xml"))
+        val name = inputFile.nameWithoutExtension
+
+        outputFile = File("${inputFile.parent}/my${name}T.xml")
         bufferedWriter = BufferedWriter(FileWriter(outputFile))
         bufferedReader = BufferedReader(FileReader(inputFile))
     }
