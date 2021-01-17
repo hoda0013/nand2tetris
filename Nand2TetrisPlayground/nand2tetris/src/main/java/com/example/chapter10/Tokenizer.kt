@@ -119,7 +119,7 @@ class Tokenizer {
     }
 
     private fun isKeyword(value: String): Boolean {
-        return Parser.Keyword.values().contains(value)
+        return Parser.Keyword.values().map{ it.value }.contains(value)
     }
 
     private fun isSymbol(value: String): Boolean {
@@ -143,8 +143,8 @@ class Tokenizer {
     enum class TokenType(val value: String) {
         KEYWORD("keyword"),
         SYMBOL("symbol"),
-        INTEGER("integer"),
-        STRING("string"),
+        INTEGER("integerConstant"),
+        STRING("stringConstant"),
         IDENTIFIER("identifier");
     }
 
