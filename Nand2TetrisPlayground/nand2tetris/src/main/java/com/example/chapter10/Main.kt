@@ -6,7 +6,8 @@ fun main(args: Array<String>) {
 
     val tokenizer = Tokenizer()
     tokenizer.initialize("/Users/bigern/Projects/nand2tetris/projects/10/Square/Main.jack")
-    tokenizer.tokenize()
+    tokenizer.tokenize2()
+//    tokenizer.tokenize()
 //    val tokens: MutableList<String> = ArrayList<String>().apply {
 //        add("class")
 //        add("Bar")
