@@ -7,24 +7,24 @@ import java.util.regex.Pattern
 
 
 class Parser {
-    private var tokens: List<String> = emptyList()
-    private lateinit var currentToken: String
+    private var tokens: List<Tokenizer.Token> = emptyList()
+    private lateinit var currentToken: Tokenizer.Token
     private var tokenPointer: Int = 0
     private var outputFile: File = File("parser_output.txt")
     private var bufferedWriter = BufferedWriter(FileWriter(outputFile))
     private var numTabs = 0
 
-    private fun getNextToken(): String? {
+    private fun getNextToken(): Tokenizer.Token? {
         tokenPointer++
         currentToken = tokens[tokenPointer]
         return currentToken
     }
 
-    private fun peekNextToken(): String? {
+    private fun peekNextToken(): Tokenizer.Token? {
         return tokens[tokenPointer + 1]
     }
 
-    fun setTokens(tokens: List<String>) {
+    fun setTokens(tokens: List<Tokenizer.Token>) {
         this.tokens = tokens
         currentToken = tokens[tokenPointer]
     }
@@ -52,11 +52,11 @@ class Parser {
     }
 
     private fun parseKeyword() {
-        if (Keyword.values().map { it.value }.contains(currentToken)) {
-            printTerminalTag(Category.KEYWORD.name.toLowerCase(), currentToken)
-        } else {
-            throw Exception("cannot parse $currentToken as Keyword")
-        }
+        printTerminalTag(Category.KEYWORD.name.toLowerCase(), currentToken.value)
+//        if (Keyword.values().map { it.value }.contains(currentToken)) {
+//        } else {
+//            throw Exception("cannot parse $currentToken as Keyword")
+//        }
     }
 
     private fun print(value: String) {
@@ -81,24 +81,24 @@ class Parser {
         print("</$tagName>\n")
     }
 
-    private fun isIdentifier(): Boolean {
-        val regex = "[a-zA-Z_][a-zA-Z0-9_]*"
-        val pattern = Pattern.compile(regex)
-
-        return pattern.matcher(currentToken).matches()
-    }
+//    private fun isIdentifier(): Boolean {
+//        val regex = "[a-zA-Z_][a-zA-Z0-9_]*"
+//        val pattern = Pattern.compile(regex)
+//
+//        return pattern.matcher(currentToken.value).matches()
+//    }
 
     private fun parseIdentifier() {
-        if (isIdentifier()) {
-            printTerminalTag(Category.IDENTIFIER.value.toLowerCase(), currentToken)
+        if (currentToken.type == Tokenizer.TokenType.IDENTIFIER) {
+            printTerminalTag(Category.IDENTIFIER.value.toLowerCase(), currentToken.value)
         } else {
             throw Exception("token: $currentToken not a valid Identifier")
         }
     }
 
     private fun parseSymbol(expectedSymbol: Char) {
-        if (expectedSymbol.toString() == currentToken) {
-            printTerminalTag(Category.SYMBOL.value.toLowerCase(), currentToken)
+        if (currentToken.type == Tokenizer.TokenType.SYMBOL && expectedSymbol.toString() == currentToken.value) {
+            printTerminalTag(Category.SYMBOL.value.toLowerCase(), currentToken.value)
         } else {
             throw Exception("expected: $expectedSymbol got: $currentToken")
         }
@@ -106,7 +106,7 @@ class Parser {
 
     // class is a non-terminal
     private fun parseClass() {
-        if (currentToken.equals(Keyword.CLASS.value, true)) {
+        if (currentToken.type == Tokenizer.TokenType.KEYWORD) {
             // Print open class tag <class>
             printNonTerminalOpenTag(Keyword.CLASS.value)
 
@@ -119,15 +119,15 @@ class Parser {
             parseSymbol('{')
             getNextToken()
 
-            while(currentToken == Keyword.STATIC.value
-                    || currentToken == Keyword.FIELD.value) {
+            while(currentToken.value == Keyword.STATIC.value
+                    || currentToken.value == Keyword.FIELD.value) {
                 parseClassVarDec()
                 getNextToken()
             }
 
-            while(currentToken == Keyword.CONSTRUCTOR.value
-                    || currentToken == Keyword.METHOD.value
-                    || currentToken == Keyword.FUNCTION.value) {
+            while(currentToken.value == Keyword.CONSTRUCTOR.value
+                    || currentToken.value == Keyword.METHOD.value
+                    || currentToken.value == Keyword.FUNCTION.value) {
                 parseSubroutineDec()
             }
 
@@ -142,9 +142,9 @@ class Parser {
         printNonTerminalOpenTag(Category.SUBROUTINE_DEC.value)
 
         // first token must be a "constructor" "function" or "method"
-        if (currentToken == Keyword.CONSTRUCTOR.value
-                || currentToken == Keyword.FUNCTION.value
-                || currentToken == Keyword.METHOD.value) {
+        if (currentToken.value == Keyword.CONSTRUCTOR.value
+                || currentToken.value == Keyword.FUNCTION.value
+                || currentToken.value == Keyword.METHOD.value) {
             parseKeyword()
             getNextToken()
         } else {
@@ -153,7 +153,7 @@ class Parser {
 
         // next token is void or a valid type or an exception
 
-        if (currentToken == Keyword.VOID.value) {
+        if (currentToken.value == Keyword.VOID.value) {
             parseKeyword()
         } else {
             parseType()
@@ -168,7 +168,7 @@ class Parser {
         parseSymbol('(')
         getNextToken()
 
-        if (currentToken == ")") {
+        if (currentToken.value == ")") {
             parseSymbol(')')
             getNextToken()
         } else {
@@ -189,11 +189,11 @@ class Parser {
     private fun parseStatements() {
         printNonTerminalOpenTag(Category.STATEMENTS.value)
 
-        while(currentToken == Keyword.LET.value
-                || currentToken == Keyword.IF.value
-                || currentToken == Keyword.WHILE.value
-                || currentToken == Keyword.DO.value
-                || currentToken == Keyword.RETURN.value) {
+        while(currentToken.value == Keyword.LET.value
+                || currentToken.value == Keyword.IF.value
+                || currentToken.value == Keyword.WHILE.value
+                || currentToken.value == Keyword.DO.value
+                || currentToken.value == Keyword.RETURN.value) {
 
             parseStatement()
             getNextToken()
@@ -206,12 +206,12 @@ class Parser {
         //TODO: Flesh all of these out
 
             // classify statement and parse
-        if (currentToken == Keyword.LET.value
-                || currentToken == Keyword.IF.value
-                || currentToken == Keyword.WHILE.value
-                || currentToken == Keyword.DO.value
-                || currentToken == Keyword.RETURN.value) {
-            when (currentToken) {
+        if (currentToken.value == Keyword.LET.value
+                || currentToken.value == Keyword.IF.value
+                || currentToken.value == Keyword.WHILE.value
+                || currentToken.value == Keyword.DO.value
+                || currentToken.value == Keyword.RETURN.value) {
+            when (currentToken.value) {
                 Keyword.LET.value -> {
                     printNonTerminalOpenTag(Category.LET_STATEMENT.value)
 
@@ -221,24 +221,24 @@ class Parser {
                     parseVarName()
                     getNextToken()
 
-                    if (currentToken == "[") {
+                    if (currentToken.value == "[") {
                         // If next token is a "[" then you parse an expression
                         parseSymbol('[')
                         getNextToken()
 
                         parseExpression()
-//                        getNextToken()
                         // parse expression
                         parseSymbol(']')
                         getNextToken()
                     }
 
-                    //TODO:
-                    // Parse "=" symbol
+                    parseSymbol('=')
+                    getNextToken()
 
-                    // Parse expression
+                    parseExpression()
+                    getNextToken()
 
-                    // Parse ";" symbol
+                    parseSymbol(';')
 
                     printNonTerminalCloseTag(Category.LET_STATEMENT.value)
                 }
@@ -276,7 +276,7 @@ class Parser {
     private fun parseVarDec() {
         printNonTerminalOpenTag(Category.VAR_DEC.value)
 
-        if (currentToken == Keyword.VAR.value) {
+        if (currentToken.value == Keyword.VAR.value) {
             parseKeyword()
             getNextToken()
 
@@ -286,7 +286,7 @@ class Parser {
             parseVarName()
             getNextToken()
 
-            while(currentToken == ",") {
+            while(currentToken.value == ",") {
                 parseSymbol(',')
                 getNextToken()
                 parseVarName()
@@ -309,7 +309,7 @@ class Parser {
         getNextToken()
 
         // zero or more var decs
-        while(currentToken == Keyword.VAR.value) {
+        while(currentToken.value == Keyword.VAR.value) {
             parseVarDec()
             getNextToken()
         }
@@ -336,7 +336,7 @@ class Parser {
             parseVarName()
             getNextToken()
 
-            while(currentToken == ",") {
+            while(currentToken.value == ",") {
                 parseSymbol(',')
                 getNextToken()
                 parseVarName()
@@ -349,7 +349,7 @@ class Parser {
     private fun parseClassVarDec() {
         printNonTerminalOpenTag(Category.CLASS_VAR_DEC.value)
 
-        if (currentToken == Keyword.STATIC.value || currentToken == Keyword.FIELD.value) {
+        if (currentToken.value == Keyword.STATIC.value || currentToken.value == Keyword.FIELD.value) {
             parseKeyword()
             getNextToken()
         } else {
@@ -364,7 +364,7 @@ class Parser {
         parseVarName()
         getNextToken()
 
-        while(currentToken == ",") {
+        while(currentToken.value == ",") {
             parseSymbol(',')
             getNextToken()
             parseVarName()
@@ -377,9 +377,9 @@ class Parser {
     }
 
     private fun parseType() {
-        if (currentToken == Keyword.INT.value
-                || currentToken == Keyword.CHAR.value
-                || currentToken == Keyword.BOOLEAN.value) {
+        if (currentToken.value == Keyword.INT.value
+                || currentToken.value == Keyword.CHAR.value
+                || currentToken.value == Keyword.BOOLEAN.value) {
             parseKeyword()
         } else {
             parseIdentifier()
@@ -409,7 +409,7 @@ class Parser {
 
     private fun isIntegerConstant(): Boolean {
         return try {
-            val number = currentToken.toInt()
+            val number = currentToken.value.toInt()
             number in 0..32767
         } catch (e: NumberFormatException) {
             false
@@ -417,51 +417,51 @@ class Parser {
     }
 
     private fun isKeywordConstant(): Boolean {
-        return currentToken == Keyword.TRUE.value
-                || currentToken == Keyword.FALSE.value
-                || currentToken == Keyword.NULL.value
-                || currentToken == Keyword.THIS.value
+        return currentToken.value == Keyword.TRUE.value
+                || currentToken.value == Keyword.FALSE.value
+                || currentToken.value == Keyword.NULL.value
+                || currentToken.value == Keyword.THIS.value
     }
 
     private fun isStringConstant(): Boolean {
-        return currentToken.startsWith("\"")
-                && currentToken.endsWith("\"")
-                && !currentToken.trimStart().trimEnd().contains("\"")
-                && !currentToken.trimStart().trimEnd().contains("\n")
+        return currentToken.value.startsWith("\"")
+                && currentToken.value.endsWith("\"")
+                && !currentToken.value.trimStart().trimEnd().contains("\"")
+                && !currentToken.value.trimStart().trimEnd().contains("\n")
     }
 
     private fun isVarName(): Boolean {
-        return isIdentifier()
+        return currentToken.type == Tokenizer.TokenType.IDENTIFIER
     }
 
     private fun isSubroutineCall(): Boolean {
         // subroutines start with a subroutine name which is just an identifier
-        return isIdentifier()
+        return currentToken.type == Tokenizer.TokenType.IDENTIFIER
     }
 
     private fun isUnaryOp(): Boolean {
-        return currentToken == "~"
-                || currentToken == "-"
+        return currentToken.value == "~"
+                || currentToken.value == "-"
     }
 
     private fun isOp(): Boolean {
-        return currentToken == "+"
-                || currentToken == "-"
-                || currentToken == "*"
-                || currentToken == "/"
-                || currentToken == "&"
-                || currentToken == "|"
-                || currentToken == "<"
-                || currentToken == ">"
-                || currentToken == "="
+        return currentToken.value == "+"
+                || currentToken.value == "-"
+                || currentToken.value == "*"
+                || currentToken.value == "/"
+                || currentToken.value == "&"
+                || currentToken.value == "|"
+                || currentToken.value == "<"
+                || currentToken.value == ">"
+                || currentToken.value == "="
     }
 
     private fun parseOp() {
-        printTerminalTag(Category.OP.value, currentToken)
+        printTerminalTag(Category.OP.value, currentToken.value)
     }
 
     private fun parseUnaryOp() {
-        when (currentToken) {
+        when (currentToken.value) {
             "-" -> {
                 parseSymbol('-')
             }
@@ -477,13 +477,13 @@ class Parser {
     private fun parseExpressionList() {
         // Expression lists have 0 or 1 initial expressions
         // If 1 initial expression exists then there may be 0 to N comma separated expressions
-        if (currentToken == ")") {
+        if (currentToken.value == ")") {
             return
         } else {
             parseExpression()
 //            getNextToken()
 
-            while(currentToken == ",") {
+            while(currentToken.value == ",") {
                 parseSymbol(',')
                 parseExpression()
 //                getNextToken()
@@ -493,20 +493,21 @@ class Parser {
 
     private fun parseTerm() {
         when {
-            isIntegerConstant() -> {
-                printTerminalTag(Category.INTEGER_CONSTANT.value, currentToken)
+
+            currentToken.type == Tokenizer.TokenType.INTEGER -> {
+                printTerminalTag(Category.INTEGER_CONSTANT.value, currentToken.value)
             }
-            isStringConstant() -> {
-                printTerminalTag(Category.STRING_CONSTANT.value, currentToken)
+            currentToken.type == Tokenizer.TokenType.STRING -> {
+                printTerminalTag(Category.STRING_CONSTANT.value, currentToken.value)
             }
-            isKeywordConstant() -> {
+            currentToken.type == Tokenizer.TokenType.KEYWORD -> {
                 parseKeyword()
             }
             isVarName() -> {
                 parseIdentifier()
                 val nextToken = peekNextToken()
 
-                if (nextToken == "[") {
+                if (nextToken?.value == "[") {
                     getNextToken()
                     parseSymbol('[')
                     getNextToken()
@@ -517,11 +518,11 @@ class Parser {
             }
             isSubroutineCall() -> {
                 //
-                if (isIdentifier()) {
+                if (currentToken.type == Tokenizer.TokenType.IDENTIFIER) {
                     // subroutineCall will either be a subroutineName followed by a "(" or a className or varName followed by a "."
                     parseIdentifier() // takes care of the subRoutineName, className or varName
                     getNextToken()
-                    when (currentToken) {
+                    when (currentToken.value) {
                         "(" -> {
                             parseSymbol('(')
                             getNextToken()
@@ -557,7 +558,7 @@ class Parser {
                     throwException()
                 }
             }
-            currentToken == "(" -> {
+            currentToken.value == "(" -> {
                 parseSymbol('(')
                 getNextToken()
 
@@ -579,7 +580,7 @@ class Parser {
     }
 
     private fun throwException() {
-        throw Exception("Error parsing token: $currentToken at tokenIndex: $tokenPointer")
+        throw Exception("Error parsing token: $currentToken.value at tokenIndex: $tokenPointer")
     }
 
     object Symbol {

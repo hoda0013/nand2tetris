@@ -36,9 +36,9 @@ public class MyMain {
         tokens.add(")");
 
 
-        Parser p = new Parser();
-        p.setTokens(tokens);
-        p.parse();
+//        Parser p = new Parser();
+//        p.setTokens(tokens);
+//        p.parse();
     }
 
     public static void quickSort(int [] array) {

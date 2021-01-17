@@ -5,6 +5,7 @@ import java.io.BufferedWriter
 import java.io.File
 import java.io.FileReader
 import java.io.FileWriter
+import java.util.regex.Pattern
 
 
 class Tokenizer {
@@ -15,6 +16,7 @@ class Tokenizer {
     private lateinit var inputFile: File
 
     private var tokenState: TokenState = TokenState.NORMAL
+    var tokens = ArrayList<Token>()
 
     fun initialize(fileName: String) {
         inputFile = File(fileName)
@@ -25,10 +27,10 @@ class Tokenizer {
         bufferedReader = BufferedReader(FileReader(inputFile))
     }
 
-    fun tokenize() {
+    fun tokenize(): List<Token> {
+        tokens.clear()
         // Read line in
         var line = bufferedReader.readLine()
-
         bufferedWriter.append("<tokens>\n")
 
         while (line != null) {
@@ -77,12 +79,18 @@ class Tokenizer {
                         printToken(tempToken)
                         tempToken = ""
 
-                        Token(TokenType.SYMBOL, it.toString()).printTag(bufferedWriter)
+                        Token(TokenType.SYMBOL, it.toString()).also {
+                            tokens.add(it)
+                            it.printTag(bufferedWriter)
+                        }
                     } else if (it == '"') {
                         if (isStringLiteral) {
                             // This is the closing quotation mark
                             isStringLiteral = false
-                            Token(TokenType.STRING, tempToken).printTag(bufferedWriter)
+                            Token(TokenType.STRING, tempToken).also {
+                                tokens.add(it)
+                                it.printTag(bufferedWriter)
+                            }
                             tempToken = ""
                         } else {
                             // This is the opening quotation mark
@@ -99,29 +107,52 @@ class Tokenizer {
 
         bufferedWriter.append("</tokens>")
         bufferedWriter.close()
+        return tokens
     }
 
     private fun printToken(token: String) {
         if (token.isNotEmpty()) {
             when {
                 isKeyword(token) -> {
-                    Token(TokenType.KEYWORD, token).printTag(bufferedWriter)
+                    Token(TokenType.KEYWORD, token).also {
+                        tokens.add(it)
+                        it.printTag(bufferedWriter)
+                    }
                 }
                 isSymbol(token) -> {
-                    Token(TokenType.SYMBOL, token).printTag(bufferedWriter)
+                    Token(TokenType.SYMBOL, token).also {
+                        tokens.add(it)
+                        it.printTag(bufferedWriter)
+                    }
                 }
                 isIntConstant(token) -> {
-                    Token(TokenType.INTEGER, token).printTag(bufferedWriter)
+                    Token(TokenType.INTEGER, token).also {
+                        tokens.add(it)
+                        it.printTag(bufferedWriter)
+                    }
+                }
+                isIdentifier(token) -> {
+                    Token(TokenType.IDENTIFIER, token).also {
+                        tokens.add(it)
+                        it.printTag(bufferedWriter)
+                    }
                 }
                 else -> {
-                    Token(TokenType.IDENTIFIER, token).printTag(bufferedWriter)
+                    throw Exception("token: $token not recognized")
                 }
             }
         }
     }
 
+    val regex = "[a-zA-Z_][a-zA-Z0-9_]*"
+    val pattern = Pattern.compile(regex)
+
+    private fun isIdentifier(value: String): Boolean {
+        return pattern.matcher(value).matches()
+    }
+
     private fun isKeyword(value: String): Boolean {
-        return Parser.Keyword.values().map{ it.value }.contains(value)
+        return Parser.Keyword.values().map { it.value }.contains(value)
     }
 
     private fun isSymbol(value: String): Boolean {
@@ -152,13 +183,23 @@ class Tokenizer {
 
     data class Token(val type: TokenType, val value: String) {
         fun printTag(bufferedWriter: BufferedWriter) {
-            val printValue = if(type == TokenType.SYMBOL) {
-                when(value) {
-                    "<" -> {"&lt;"}
-                    ">" -> {"&gt;"}
-                    "\"" -> {"&quote;"}
-                    "&" -> {"&amp;"}
-                    else -> { value }
+            val printValue = if (type == TokenType.SYMBOL) {
+                when (value) {
+                    "<" -> {
+                        "&lt;"
+                    }
+                    ">" -> {
+                        "&gt;"
+                    }
+                    "\"" -> {
+                        "&quote;"
+                    }
+                    "&" -> {
+                        "&amp;"
+                    }
+                    else -> {
+                        value
+                    }
                 }
             } else {
                 value
