@@ -6,11 +6,11 @@ import java.io.FileWriter
 import java.util.regex.Pattern
 
 
-class Parser {
+class Parser constructor(outputDirPath: String, filename: String){
     private var tokens: List<Tokenizer.Token> = emptyList()
     private lateinit var currentToken: Tokenizer.Token
     private var tokenPointer: Int = 0
-    private var outputFile: File = File("parser_output.txt")
+    private var outputFile: File = File("$outputDirPath/$filename.xml")
     private var bufferedWriter = BufferedWriter(FileWriter(outputFile))
     private var numTabs = 0
 

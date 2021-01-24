@@ -8,7 +8,7 @@ import java.io.FileWriter
 import java.util.regex.Pattern
 
 
-class Tokenizer {
+class Tokenizer (val outputDirPath: String){
 
     private lateinit var outputFile: File
     private lateinit var bufferedWriter: BufferedWriter
@@ -22,7 +22,8 @@ class Tokenizer {
         inputFile = File(fileName)
         val name = inputFile.nameWithoutExtension
 
-        outputFile = File("${inputFile.parent}/my${name}T.xml")
+        outputFile = File("$outputDirPath/${name}T.xml")
+//        outputFile = File("${inputFile.parent}/my${name}T.xml")
         bufferedWriter = BufferedWriter(FileWriter(outputFile))
         bufferedReader = BufferedReader(FileReader(inputFile))
     }
