@@ -6,7 +6,7 @@ import java.io.FileWriter
 import java.util.regex.Pattern
 
 
-class Parser constructor(outputDirPath: String, filename: String){
+class Parser constructor(val outputDirPath: String, val filename: String){
     private var tokens: List<Tokenizer.Token> = emptyList()
     private lateinit var currentToken: Tokenizer.Token
     private var tokenPointer: Int = 0
@@ -34,6 +34,7 @@ class Parser constructor(outputDirPath: String, filename: String){
         try {
             parseClass()
         } catch (e: Exception) {
+            System.out.println(e)
             bufferedWriter.close()
         }
         bufferedWriter.close()
@@ -46,7 +47,7 @@ class Parser constructor(outputDirPath: String, filename: String){
  /** // // */
     private fun unIndent() {
         if (numTabs == 0) {
-            throw Exception("Can't unindent any more")
+            throw Exception("Can't unindent any more. currentToken = $currentToken")
         }
         numTabs--
     }
@@ -92,7 +93,7 @@ class Parser constructor(outputDirPath: String, filename: String){
         if (currentToken.type == Tokenizer.TokenType.IDENTIFIER) {
             printTerminalTag(Category.IDENTIFIER.value.toLowerCase(), currentToken.value)
         } else {
-            throw Exception("token: $currentToken not a valid Identifier")
+            throw Exception("token: $currentToken not a valid Identifier @ Line ${currentToken.line} $filename sed -n ${currentToken.line}p $filename")
         }
     }
 
@@ -100,7 +101,7 @@ class Parser constructor(outputDirPath: String, filename: String){
         if (currentToken.type == Tokenizer.TokenType.SYMBOL && expectedSymbol.toString() == currentToken.value) {
             printTerminalTag(Category.SYMBOL.value.toLowerCase(), currentToken.value)
         } else {
-            throw Exception("expected: $expectedSymbol got: $currentToken")
+            throw Exception("expected: $expectedSymbol got: $currentToken @ Line ${currentToken.line} $filename sed -n ${currentToken.line}p $filename")
         }
     }
 
@@ -646,7 +647,7 @@ class Parser constructor(outputDirPath: String, filename: String){
     }
 
     private fun throwException() {
-        throw Exception("Error parsing token: $currentToken.value at tokenIndex: $tokenPointer")
+        throw Exception("Error parsing token: $currentToken.value at tokenIndex: $tokenPointer @ Line ${currentToken.line} $filename sed -n ${currentToken.line}p $filename")
     }
 
     object Symbol {

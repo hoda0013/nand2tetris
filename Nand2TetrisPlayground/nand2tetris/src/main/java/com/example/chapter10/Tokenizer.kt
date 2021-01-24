@@ -14,6 +14,7 @@ class Tokenizer (val outputDirPath: String){
     private lateinit var bufferedWriter: BufferedWriter
     private lateinit var bufferedReader: BufferedReader
     private lateinit var inputFile: File
+    private var lineCount = 1
 
     private var tokenState: TokenState = TokenState.NORMAL
     var tokens = ArrayList<Token>()
@@ -80,7 +81,7 @@ class Tokenizer (val outputDirPath: String){
                         printToken(tempToken)
                         tempToken = ""
 
-                        Token(TokenType.SYMBOL, it.toString()).also {
+                        Token(TokenType.SYMBOL, it.toString(), lineCount).also {
                             tokens.add(it)
                             it.printTag(bufferedWriter)
                         }
@@ -88,7 +89,7 @@ class Tokenizer (val outputDirPath: String){
                         if (isStringLiteral) {
                             // This is the closing quotation mark
                             isStringLiteral = false
-                            Token(TokenType.STRING, tempToken).also {
+                            Token(TokenType.STRING, tempToken, lineCount).also {
                                 tokens.add(it)
                                 it.printTag(bufferedWriter)
                             }
@@ -104,6 +105,7 @@ class Tokenizer (val outputDirPath: String){
             }
 
             line = bufferedReader.readLine()
+            lineCount++
         }
 
         bufferedWriter.append("</tokens>")
@@ -115,25 +117,25 @@ class Tokenizer (val outputDirPath: String){
         if (token.isNotEmpty()) {
             when {
                 isKeyword(token) -> {
-                    Token(TokenType.KEYWORD, token).also {
+                    Token(TokenType.KEYWORD, token, lineCount).also {
                         tokens.add(it)
                         it.printTag(bufferedWriter)
                     }
                 }
                 isSymbol(token) -> {
-                    Token(TokenType.SYMBOL, token).also {
+                    Token(TokenType.SYMBOL, token, lineCount).also {
                         tokens.add(it)
                         it.printTag(bufferedWriter)
                     }
                 }
                 isIntConstant(token) -> {
-                    Token(TokenType.INTEGER, token).also {
+                    Token(TokenType.INTEGER, token, lineCount).also {
                         tokens.add(it)
                         it.printTag(bufferedWriter)
                     }
                 }
                 isIdentifier(token) -> {
-                    Token(TokenType.IDENTIFIER, token).also {
+                    Token(TokenType.IDENTIFIER, token, lineCount).also {
                         tokens.add(it)
                         it.printTag(bufferedWriter)
                     }
@@ -182,7 +184,7 @@ class Tokenizer (val outputDirPath: String){
         IDENTIFIER("identifier");
     }
 
-    data class Token(val type: TokenType, val value: String) {
+    data class Token(val type: TokenType, val value: String, val line: Int) {
         fun printTag(bufferedWriter: BufferedWriter) {
             val printValue = if (type == TokenType.SYMBOL) {
                 when (value) {
