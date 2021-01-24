@@ -24,7 +24,6 @@ class Tokenizer (val outputDirPath: String){
         val name = inputFile.nameWithoutExtension
 
         outputFile = File("$outputDirPath/${name}T.xml")
-//        outputFile = File("${inputFile.parent}/my${name}T.xml")
         bufferedWriter = BufferedWriter(FileWriter(outputFile))
         bufferedReader = BufferedReader(FileReader(inputFile))
     }
@@ -42,10 +41,12 @@ class Tokenizer (val outputDirPath: String){
                     // We're in a comment and this line contains the closing
                     tokenState = TokenState.NORMAL
                     line = bufferedReader.readLine()
+                    lineCount++
                     continue
                 } else {
                     // We're in a multi line comment and this line doesn't contain the comment terminator
                     line = bufferedReader.readLine()
+                    lineCount++
                     continue
                 }
             } else {
@@ -53,12 +54,14 @@ class Tokenizer (val outputDirPath: String){
                     if (line.contains("*/")) {
                         // This is a multi-line comment that is only using one line
                         line = bufferedReader.readLine()
+                        lineCount++
                         continue
                     } else {
                         // This is a multi line comment spread over multiple lines
                         tokenState = TokenState.COMMENT
 
                         line = bufferedReader.readLine()
+                        lineCount++
                         continue
                     }
                 } else if (line.contains("//")) {

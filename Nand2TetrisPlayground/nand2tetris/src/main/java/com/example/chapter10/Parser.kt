@@ -20,6 +20,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
         return currentToken
     }
 
+
     private fun peekNextToken(): Tokenizer.Token? {
         return tokens[tokenPointer + 1]
     }
@@ -54,10 +55,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
 
     private fun parseKeyword() {
         printTerminalTag(Category.KEYWORD.name.toLowerCase(), currentToken.value)
-//        if (Keyword.values().map { it.value }.contains(currentToken)) {
-//        } else {
-//            throw Exception("cannot parse $currentToken as Keyword")
-//        }
+        getNextToken()
     }
 
     private fun print(value: String) {
@@ -92,6 +90,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
     private fun parseIdentifier() {
         if (currentToken.type == Tokenizer.TokenType.IDENTIFIER) {
             printTerminalTag(Category.IDENTIFIER.value.toLowerCase(), currentToken.value)
+            getNextToken()
         } else {
             throw Exception("token: $currentToken not a valid Identifier @ Line ${currentToken.line} $filename sed -n ${currentToken.line}p $filename")
         }
@@ -100,6 +99,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
     private fun parseSymbol(expectedSymbol: Char) {
         if (currentToken.type == Tokenizer.TokenType.SYMBOL && expectedSymbol.toString() == currentToken.value) {
             printTerminalTag(Category.SYMBOL.value.toLowerCase(), currentToken.value)
+            getNextToken()
         } else {
             throw Exception("expected: $expectedSymbol got: $currentToken @ Line ${currentToken.line} $filename sed -n ${currentToken.line}p $filename")
         }
@@ -112,18 +112,14 @@ class Parser constructor(val outputDirPath: String, val filename: String){
             printNonTerminalOpenTag(Keyword.CLASS.value)
 
             parseKeyword()
-            getNextToken()
 
             parseClassName()
-            getNextToken()
 
             parseSymbol('{')
-            getNextToken()
 
             while(currentToken.value == Keyword.STATIC.value
                     || currentToken.value == Keyword.FIELD.value) {
                 parseClassVarDec()
-                getNextToken()
             }
 
             while(currentToken.value == Keyword.CONSTRUCTOR.value
@@ -147,7 +143,6 @@ class Parser constructor(val outputDirPath: String, val filename: String){
                 || currentToken.value == Keyword.FUNCTION.value
                 || currentToken.value == Keyword.METHOD.value) {
             parseKeyword()
-            getNextToken()
         } else {
             throwException()
         }
@@ -159,30 +154,24 @@ class Parser constructor(val outputDirPath: String, val filename: String){
         } else {
             parseType()
         }
-        getNextToken()
 
         // next token is the subroutine name
         parseSubroutineName()
-        getNextToken()
 
         // parse parameter list '(' with param list inside and ending in ')'
         parseSymbol('(')
-        getNextToken()
 
         if (currentToken.value == ")") {
             parseSymbol(')')
-            getNextToken()
         } else {
             parseParameterList()
             // We don't need to call getNextToken here because param list does that by default
             parseSymbol(')')
-            getNextToken()
         }
 
 
         // next is the subroutine body
         parseSubroutineBody()
-        getNextToken()
 
         printNonTerminalCloseTag(Category.SUBROUTINE_DEC.value)
     }
@@ -197,15 +186,12 @@ class Parser constructor(val outputDirPath: String, val filename: String){
                 || currentToken.value == Keyword.RETURN.value) {
 
             parseStatement()
-            getNextToken()
         }
 
         printNonTerminalCloseTag(Category.STATEMENTS.value)
     }
 
     private fun parseStatement() {
-        //TODO: Flesh all of these out
-
             // classify statement and parse
         if (currentToken.value == Keyword.LET.value
                 || currentToken.value == Keyword.IF.value
@@ -217,27 +203,21 @@ class Parser constructor(val outputDirPath: String, val filename: String){
                     printNonTerminalOpenTag(Category.LET_STATEMENT.value)
 
                     parseKeyword()
-                    getNextToken()
 
                     parseVarName()
-                    getNextToken()
 
                     if (currentToken.value == "[") {
                         // If next token is a "[" then you parse an expression
                         parseSymbol('[')
-                        getNextToken()
 
                         parseExpression()
                         // parse expression
                         parseSymbol(']')
-                        getNextToken()
                     }
 
                     parseSymbol('=')
-                    getNextToken()
 
                     parseExpression()
-                    getNextToken()
 
                     parseSymbol(';')
 
@@ -249,27 +229,21 @@ class Parser constructor(val outputDirPath: String, val filename: String){
                     parseKeyword()
 
                     parseSymbol('(')
-                    getNextToken()
 
                     parseExpression()
 
                     parseSymbol(')')
-                    getNextToken()
 
                     parseSymbol('{')
-                    getNextToken()
 
                     parseStatements()
 
                     parseSymbol('}')
-                    getNextToken()
 
                     if (currentToken.value == Keyword.ELSE.value) {
                         parseKeyword()
-                        getNextToken()
 
                         parseSymbol('{')
-                        getNextToken()
 
                         parseStatements()
 
@@ -281,18 +255,14 @@ class Parser constructor(val outputDirPath: String, val filename: String){
                 Keyword.WHILE.value -> {
                     printNonTerminalOpenTag(Category.WHILE_STATEMENT.value)
                     parseKeyword()
-                    getNextToken()
 
                     parseSymbol('(')
-                    getNextToken()
 
                     parseExpression()
 
                     parseSymbol(')')
-                    getNextToken()
 
                     parseSymbol('{')
-                    getNextToken()
 
                     parseStatements()
 
@@ -303,10 +273,8 @@ class Parser constructor(val outputDirPath: String, val filename: String){
                 Keyword.DO.value -> {
                     printNonTerminalOpenTag(Category.DO_STATEMENT.value)
                     parseKeyword()
-                    getNextToken()
 
                     parseSubroutineCall()
-                    getNextToken()
 
                     parseSymbol(';')
 
@@ -315,7 +283,6 @@ class Parser constructor(val outputDirPath: String, val filename: String){
                 Keyword.RETURN.value -> {
                     printNonTerminalOpenTag(Category.RETURN_STATEMENT.value)
                     parseKeyword()
-                    getNextToken()
 
                     if(currentToken.value == ";") {
                         parseSymbol(';')
@@ -341,19 +308,14 @@ class Parser constructor(val outputDirPath: String, val filename: String){
 
         if (currentToken.value == Keyword.VAR.value) {
             parseKeyword()
-            getNextToken()
 
             parseType()
-            getNextToken()
 
             parseVarName()
-            getNextToken()
 
             while(currentToken.value == ",") {
                 parseSymbol(',')
-                getNextToken()
                 parseVarName()
-                getNextToken()
             }
 
             parseSymbol(';')
@@ -369,17 +331,14 @@ class Parser constructor(val outputDirPath: String, val filename: String){
         printNonTerminalOpenTag(Category.SUBROUTINE_BODY.value)
 
         parseSymbol('{')
-        getNextToken()
 
         // zero or more var decs
         while(currentToken.value == Keyword.VAR.value) {
             parseVarDec()
-            getNextToken()
         }
 
         // parse statements
         parseStatements()
-        getNextToken()
 
         parseSymbol('}')
 
@@ -394,16 +353,13 @@ class Parser constructor(val outputDirPath: String, val filename: String){
             printNonTerminalOpenTag(Category.PARAMETER_LIST.value)
 
             parseType()
-            getNextToken()
 
             parseVarName()
-            getNextToken()
 
             while(currentToken.value == ",") {
                 parseSymbol(',')
-                getNextToken()
+                parseType()
                 parseVarName()
-                getNextToken()
             }
 
             printNonTerminalCloseTag(Category.PARAMETER_LIST.value)
@@ -414,7 +370,6 @@ class Parser constructor(val outputDirPath: String, val filename: String){
 
         if (currentToken.value == Keyword.STATIC.value || currentToken.value == Keyword.FIELD.value) {
             parseKeyword()
-            getNextToken()
         } else {
             throwException()
         }
@@ -422,16 +377,11 @@ class Parser constructor(val outputDirPath: String, val filename: String){
         // parse the type, which is required and is either int, char, bool or something created by the user or an exception
         parseType()
 
-        getNextToken()
-
         parseVarName()
-        getNextToken()
 
         while(currentToken.value == ",") {
             parseSymbol(',')
-            getNextToken()
             parseVarName()
-            getNextToken()
         }
 
         parseSymbol(';')
@@ -459,14 +409,11 @@ class Parser constructor(val outputDirPath: String, val filename: String){
 
     private fun parseExpression() {
         parseTerm()
-        getNextToken()
 
         while(isOp()) {
             parseOp()
-            getNextToken()
 
             parseTerm()
-            getNextToken()
         }
     }
 
@@ -499,7 +446,8 @@ class Parser constructor(val outputDirPath: String, val filename: String){
 
     private fun isSubroutineCall(): Boolean {
         // subroutines start with a subroutine name which is just an identifier
-        return currentToken.type == Tokenizer.TokenType.IDENTIFIER
+        return (currentToken.type == Tokenizer.TokenType.IDENTIFIER && peekNextToken()!!.value == "(")
+                || (currentToken.type == Tokenizer.TokenType.IDENTIFIER && peekNextToken()!!.value == ".")
     }
 
     private fun isUnaryOp(): Boolean {
@@ -521,6 +469,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
 
     private fun parseOp() {
         printTerminalTag(Category.OP.value, currentToken.value)
+        getNextToken()
     }
 
     private fun parseUnaryOp() {
@@ -544,12 +493,11 @@ class Parser constructor(val outputDirPath: String, val filename: String){
             return
         } else {
             parseExpression()
-//            getNextToken()
 
             while(currentToken.value == ",") {
                 parseSymbol(',')
+
                 parseExpression()
-//                getNextToken()
             }
         }
     }
@@ -559,42 +507,41 @@ class Parser constructor(val outputDirPath: String, val filename: String){
 
             currentToken.type == Tokenizer.TokenType.INTEGER -> {
                 printTerminalTag(Category.INTEGER_CONSTANT.value, currentToken.value)
+                getNextToken()
             }
             currentToken.type == Tokenizer.TokenType.STRING -> {
                 printTerminalTag(Category.STRING_CONSTANT.value, currentToken.value)
+                getNextToken()
             }
             currentToken.type == Tokenizer.TokenType.KEYWORD -> {
                 parseKeyword()
             }
-            isVarName() -> {
+            isSubroutineCall() -> {
+                parseSubroutineCall()
+            }
+            isVarOrVarAndExpression() -> {
+                // Could be either a var name, a var name the '[' expression ']', or a subroutine call
                 parseIdentifier()
-                val nextToken = peekNextToken()
+//                val nextToken = peekNextToken()
 
-                if (nextToken?.value == "[") {
-                    getNextToken()
+                if (currentToken.value == "[") {
                     parseSymbol('[')
-                    getNextToken()
+
                     parseExpression()
-//                    getNextToken()
+
                     parseSymbol(']')
                 }
             }
-            isSubroutineCall() -> {
-                //
-                parseSubroutineCall()
-            }
+
             currentToken.value == "(" -> {
                 parseSymbol('(')
-                getNextToken()
 
                 parseExpression()
-//                getNextToken()
 
                 parseSymbol(')')
             }
             isUnaryOp() -> {
                 parseUnaryOp()
-                getNextToken()
 
                 parseTerm()
             }
@@ -604,37 +551,34 @@ class Parser constructor(val outputDirPath: String, val filename: String){
         }
     }
 
+    private fun isVarOrVarAndExpression(): Boolean {
+        return isVarName() || isVarName() && peekNextToken()!!.value == "["
+    }
+
     private fun parseSubroutineCall() {
         if (currentToken.type == Tokenizer.TokenType.IDENTIFIER) {
             // subroutineCall will either be a subroutineName followed by a "(" or a className or varName followed by a "."
             parseIdentifier() // takes care of the subRoutineName, className or varName
-            getNextToken()
             when (currentToken.value) {
                 "(" -> {
                     parseSymbol('(')
-                    getNextToken()
 
                     parseExpressionList()
                     // Don't advance token here
 
                     parseSymbol(')')
-//                    getNextToken()
                 }
                 "." -> {
                     parseSymbol('.')
-                    getNextToken()
 
                     parseSubroutineName()
-                    getNextToken()
 
                     parseSymbol('(')
-                    getNextToken()
 
                     parseExpressionList()
                     // Don't advance token here
 
                     parseSymbol(')')
-//                    getNextToken()
                 }
                 else -> {
                     throwException()
