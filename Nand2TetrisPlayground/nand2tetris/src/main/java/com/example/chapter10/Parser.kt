@@ -247,21 +247,83 @@ class Parser {
 
                     parseKeyword()
 
+                    parseSymbol('(')
+                    getNextToken()
+
+                    parseExpression()
+
+                    parseSymbol(')')
+                    getNextToken()
+
+                    parseSymbol('{')
+                    getNextToken()
+
+                    parseStatements()
+
+                    parseSymbol('}')
+                    getNextToken()
+
+                    if (currentToken.value == Keyword.ELSE.value) {
+                        parseKeyword()
+                        getNextToken()
+
+                        parseSymbol('{')
+                        getNextToken()
+
+                        parseStatements()
+
+                        parseSymbol('}')
+                    }
+
                     printNonTerminalCloseTag(Category.IF_STATEMENT.value)
                 }
                 Keyword.WHILE.value -> {
                     printNonTerminalOpenTag(Category.WHILE_STATEMENT.value)
                     parseKeyword()
+                    getNextToken()
+
+                    parseSymbol('(')
+                    getNextToken()
+
+                    parseExpression()
+
+                    parseSymbol(')')
+                    getNextToken()
+
+                    parseSymbol('{')
+                    getNextToken()
+
+                    parseStatements()
+
+                    parseSymbol('}')
+
                     printNonTerminalCloseTag(Category.WHILE_STATEMENT.value)
                 }
                 Keyword.DO.value -> {
                     printNonTerminalOpenTag(Category.DO_STATEMENT.value)
                     parseKeyword()
+                    getNextToken()
+
+                    parseSubroutineCall()
+                    getNextToken()
+
+                    parseSymbol(';')
+
                     printNonTerminalCloseTag(Category.DO_STATEMENT.value)
                 }
                 Keyword.RETURN.value -> {
                     printNonTerminalOpenTag(Category.RETURN_STATEMENT.value)
                     parseKeyword()
+                    getNextToken()
+
+                    if(currentToken.value == ";") {
+                        parseSymbol(';')
+                    } else {
+                        parseExpression()
+
+                        parseSymbol(';')
+                    }
+
                     printNonTerminalCloseTag(Category.RETURN_STATEMENT.value)
                 }
                 else -> {
@@ -518,45 +580,7 @@ class Parser {
             }
             isSubroutineCall() -> {
                 //
-                if (currentToken.type == Tokenizer.TokenType.IDENTIFIER) {
-                    // subroutineCall will either be a subroutineName followed by a "(" or a className or varName followed by a "."
-                    parseIdentifier() // takes care of the subRoutineName, className or varName
-                    getNextToken()
-                    when (currentToken.value) {
-                        "(" -> {
-                            parseSymbol('(')
-                            getNextToken()
-
-                            parseExpressionList()
-                            // Don't advance token here
-
-                            parseSymbol(')')
-                            getNextToken()
-                        }
-                        "." -> {
-                            parseSymbol('.')
-                            getNextToken()
-
-                            parseSubroutineName()
-                            getNextToken()
-
-                            parseSymbol('(')
-                            getNextToken()
-
-                            parseExpressionList()
-                            // Don't advance token here
-
-                            parseSymbol(')')
-                            getNextToken()
-                        }
-                        else -> {
-                            throwException()
-                        }
-                    }
-
-                } else {
-                    throwException()
-                }
+                parseSubroutineCall()
             }
             currentToken.value == "(" -> {
                 parseSymbol('(')
@@ -576,6 +600,48 @@ class Parser {
             else -> {
                 throwException()
             }
+        }
+    }
+
+    private fun parseSubroutineCall() {
+        if (currentToken.type == Tokenizer.TokenType.IDENTIFIER) {
+            // subroutineCall will either be a subroutineName followed by a "(" or a className or varName followed by a "."
+            parseIdentifier() // takes care of the subRoutineName, className or varName
+            getNextToken()
+            when (currentToken.value) {
+                "(" -> {
+                    parseSymbol('(')
+                    getNextToken()
+
+                    parseExpressionList()
+                    // Don't advance token here
+
+                    parseSymbol(')')
+//                    getNextToken()
+                }
+                "." -> {
+                    parseSymbol('.')
+                    getNextToken()
+
+                    parseSubroutineName()
+                    getNextToken()
+
+                    parseSymbol('(')
+                    getNextToken()
+
+                    parseExpressionList()
+                    // Don't advance token here
+
+                    parseSymbol(')')
+//                    getNextToken()
+                }
+                else -> {
+                    throwException()
+                }
+            }
+
+        } else {
+            throwException()
         }
     }
 
