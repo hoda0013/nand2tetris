@@ -6,7 +6,7 @@ import java.io.FileWriter
 import java.util.regex.Pattern
 
 
-class Parser constructor(val outputDirPath: String, val filename: String){
+class Parser constructor(val outputDirPath: String, val filename: String) {
     private var tokens: List<Tokenizer.Token> = emptyList()
     private lateinit var currentToken: Tokenizer.Token
     private var tokenPointer: Int = 0
@@ -45,7 +45,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
         numTabs++
     }
 
- /** // // */
+    /** // // */
     private fun unIndent() {
         if (numTabs == 0) {
             throw Exception("Can't unindent any more. currentToken = $currentToken")
@@ -60,8 +60,8 @@ class Parser constructor(val outputDirPath: String, val filename: String){
 
     private fun print(value: String) {
         var output = ""
-        for(i in 0 until numTabs) {
-            output = output.plus("\t")
+        for (i in 0 until numTabs) {
+            output = output.plus("  ")
         }
         bufferedWriter.append(output.plus(value))
     }
@@ -98,7 +98,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
 
     private fun parseSymbol(expectedSymbol: Char) {
         if (currentToken.type == Tokenizer.TokenType.SYMBOL && expectedSymbol.toString() == currentToken.value) {
-            printTerminalTag(Category.SYMBOL.value.toLowerCase(), currentToken.value)
+            printTerminalTag(Category.SYMBOL.value.toLowerCase(), convertSymbolToAmpersandEncoded())
             getNextToken()
         } else {
             throw Exception("expected: $expectedSymbol got: $currentToken @ Line ${currentToken.line} $filename sed -n ${currentToken.line}p $filename")
@@ -117,17 +117,22 @@ class Parser constructor(val outputDirPath: String, val filename: String){
 
             parseSymbol('{')
 
-            while(currentToken.value == Keyword.STATIC.value
+            while (currentToken.value == Keyword.STATIC.value
                     || currentToken.value == Keyword.FIELD.value) {
                 parseClassVarDec()
             }
 
-            while(currentToken.value == Keyword.CONSTRUCTOR.value
+            while (currentToken.value == Keyword.CONSTRUCTOR.value
                     || currentToken.value == Keyword.METHOD.value
                     || currentToken.value == Keyword.FUNCTION.value) {
                 parseSubroutineDec()
             }
 
+            if (currentToken.type == Tokenizer.TokenType.SYMBOL && "}" == currentToken.value) {
+                printTerminalTag(Category.SYMBOL.value.toLowerCase(), currentToken.value)
+            } else {
+                throwException()
+            }
             // Print class closing tag
             printNonTerminalCloseTag(Category.CLASS.value)
         } else {
@@ -161,13 +166,9 @@ class Parser constructor(val outputDirPath: String, val filename: String){
         // parse parameter list '(' with param list inside and ending in ')'
         parseSymbol('(')
 
-        if (currentToken.value == ")") {
-            parseSymbol(')')
-        } else {
-            parseParameterList()
-            // We don't need to call getNextToken here because param list does that by default
-            parseSymbol(')')
-        }
+        parseParameterList()
+
+        parseSymbol(')')
 
 
         // next is the subroutine body
@@ -179,7 +180,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
     private fun parseStatements() {
         printNonTerminalOpenTag(Category.STATEMENTS.value)
 
-        while(currentToken.value == Keyword.LET.value
+        while (currentToken.value == Keyword.LET.value
                 || currentToken.value == Keyword.IF.value
                 || currentToken.value == Keyword.WHILE.value
                 || currentToken.value == Keyword.DO.value
@@ -192,7 +193,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
     }
 
     private fun parseStatement() {
-            // classify statement and parse
+        // classify statement and parse
         if (currentToken.value == Keyword.LET.value
                 || currentToken.value == Keyword.IF.value
                 || currentToken.value == Keyword.WHILE.value
@@ -284,7 +285,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
                     printNonTerminalOpenTag(Category.RETURN_STATEMENT.value)
                     parseKeyword()
 
-                    if(currentToken.value == ";") {
+                    if (currentToken.value == ";") {
                         parseSymbol(';')
                     } else {
                         parseExpression()
@@ -313,7 +314,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
 
             parseVarName()
 
-            while(currentToken.value == ",") {
+            while (currentToken.value == ",") {
                 parseSymbol(',')
                 parseVarName()
             }
@@ -333,7 +334,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
         parseSymbol('{')
 
         // zero or more var decs
-        while(currentToken.value == Keyword.VAR.value) {
+        while (currentToken.value == Keyword.VAR.value) {
             parseVarDec()
         }
 
@@ -350,19 +351,21 @@ class Parser constructor(val outputDirPath: String, val filename: String){
     }
 
     private fun parseParameterList() {
-            printNonTerminalOpenTag(Category.PARAMETER_LIST.value)
+        printNonTerminalOpenTag(Category.PARAMETER_LIST.value)
 
+        if (currentToken.value != ")") {
             parseType()
 
             parseVarName()
 
-            while(currentToken.value == ",") {
+            while (currentToken.value == ",") {
                 parseSymbol(',')
                 parseType()
                 parseVarName()
             }
+        }
 
-            printNonTerminalCloseTag(Category.PARAMETER_LIST.value)
+        printNonTerminalCloseTag(Category.PARAMETER_LIST.value)
     }
 
     private fun parseClassVarDec() {
@@ -379,7 +382,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
 
         parseVarName()
 
-        while(currentToken.value == ",") {
+        while (currentToken.value == ",") {
             parseSymbol(',')
             parseVarName()
         }
@@ -408,13 +411,15 @@ class Parser constructor(val outputDirPath: String, val filename: String){
     }
 
     private fun parseExpression() {
+        printNonTerminalOpenTag(Category.EXPRESSION.value)
         parseTerm()
 
-        while(isOp()) {
+        while (isOp()) {
             parseOp()
 
             parseTerm()
         }
+        printNonTerminalCloseTag(Category.EXPRESSION.value)
     }
 
     private fun isIntegerConstant(): Boolean {
@@ -431,6 +436,19 @@ class Parser constructor(val outputDirPath: String, val filename: String){
                 || currentToken.value == Keyword.FALSE.value
                 || currentToken.value == Keyword.NULL.value
                 || currentToken.value == Keyword.THIS.value
+    }
+
+    private fun parseKeywordConstant() {
+        if (currentToken.value == Keyword.TRUE.value
+                || currentToken.value == Keyword.FALSE.value
+                || currentToken.value == Keyword.NULL.value
+                || currentToken.value == Keyword.THIS.value) {
+
+            printTerminalTag(Category.KEYWORD_CONSTANT.value, currentToken.value)
+            getNextToken()
+        } else {
+            throwException()
+        }
     }
 
     private fun isStringConstant(): Boolean {
@@ -467,18 +485,38 @@ class Parser constructor(val outputDirPath: String, val filename: String){
                 || currentToken.value == "="
     }
 
+    private fun convertSymbolToAmpersandEncoded() = when(currentToken.value) {
+        "<" -> "&lt;"
+        ">" -> "&gt;"
+        "\"" -> "&quot;"
+        "&" -> "&amp;"
+        else -> currentToken.value
+    }
+
     private fun parseOp() {
-        printTerminalTag(Category.OP.value, currentToken.value)
+        printTerminalTag(Category.SYMBOL.value, convertSymbolToAmpersandEncoded())
+
+//        printTerminalTag(Category.OP.value, convertSymbolToAmpersandEncoded())
+
         getNextToken()
     }
 
     private fun parseUnaryOp() {
+
         when (currentToken.value) {
             "-" -> {
-                parseSymbol('-')
+//                printTerminalTag(Category.UNARY_OP.value, currentToken.value)
+                printTerminalTag(Category.SYMBOL.value, currentToken.value)
+
+                getNextToken()
+//                parseSymbol('-')
             }
             "~" -> {
-                parseSymbol('~')
+//                printTerminalTag(Category.UNARY_OP.value, currentToken.value)
+
+                printTerminalTag(Category.SYMBOL.value, currentToken.value)
+                getNextToken()
+//                parseSymbol('~')
             }
             else -> {
                 throwException()
@@ -489,20 +527,25 @@ class Parser constructor(val outputDirPath: String, val filename: String){
     private fun parseExpressionList() {
         // Expression lists have 0 or 1 initial expressions
         // If 1 initial expression exists then there may be 0 to N comma separated expressions
-        if (currentToken.value == ")") {
-            return
-        } else {
+//        if (currentToken.value == ")") {
+//            return
+//        } else {
+        printNonTerminalOpenTag(Category.EXPRESSION_LIST.value)
+        if (currentToken.value != ")") {
             parseExpression()
 
-            while(currentToken.value == ",") {
+            while (currentToken.value == ",") {
                 parseSymbol(',')
 
                 parseExpression()
             }
         }
+        printNonTerminalCloseTag(Category.EXPRESSION_LIST.value)
+//        }
     }
 
     private fun parseTerm() {
+        printNonTerminalOpenTag(Category.TERM.value)
         when {
 
             currentToken.type == Tokenizer.TokenType.INTEGER -> {
@@ -513,8 +556,8 @@ class Parser constructor(val outputDirPath: String, val filename: String){
                 printTerminalTag(Category.STRING_CONSTANT.value, currentToken.value)
                 getNextToken()
             }
-            currentToken.type == Tokenizer.TokenType.KEYWORD -> {
-                parseKeyword()
+            isKeywordConstant() -> {
+                parseKeywordConstant()
             }
             isSubroutineCall() -> {
                 parseSubroutineCall()
@@ -549,6 +592,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
                 throwException()
             }
         }
+        printNonTerminalCloseTag(Category.TERM.value)
     }
 
     private fun isVarOrVarAndExpression(): Boolean {
@@ -556,6 +600,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
     }
 
     private fun parseSubroutineCall() {
+//        printNonTerminalOpenTag(Category.SUBROUTINE_CALL.value)
         if (currentToken.type == Tokenizer.TokenType.IDENTIFIER) {
             // subroutineCall will either be a subroutineName followed by a "(" or a className or varName followed by a "."
             parseIdentifier() // takes care of the subRoutineName, className or varName
@@ -588,6 +633,7 @@ class Parser constructor(val outputDirPath: String, val filename: String){
         } else {
             throwException()
         }
+//        printNonTerminalCloseTag(Category.SUBROUTINE_CALL.value)
     }
 
     private fun throwException() {
@@ -631,14 +677,14 @@ class Parser constructor(val outputDirPath: String, val filename: String){
         IF_STATEMENT("ifStatement"),
         WHILE_STATEMENT("whileStatement"),
         DO_STATEMENT("doStatement"),
-        RETURN_STATEMENT("ReturnStatement"),
+        RETURN_STATEMENT("returnStatement"),
         EXPRESSION("expression"),
         TERM("term"),
-        SUBROUTINE_CALL("subroutinCall"),
+        SUBROUTINE_CALL("subroutineCall"),
         EXPRESSION_LIST("expressionList"),
         OP("op"),
         UNARY_OP("unaryOp"),
-        KEYWORD_CONSTANT("KeywordConstant");
+        KEYWORD_CONSTANT("keyword");
 
     }
 
